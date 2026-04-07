@@ -2073,7 +2073,7 @@ export default function Feed() {
         padding:0 6px calc(6px + env(safe-area-inset-bottom, 0px));
       }
       .mobile-msg-sheet{
-        width:100%!important;
+        width:calc(100vw - 12px)!important;
         max-width:560px;
         height:min(78dvh, 78vh)!important;
         border-radius:16px 16px 0 0!important;
@@ -3178,11 +3178,11 @@ export default function Feed() {
                     <span style={{ fontSize:'0.8rem', color:textMuted }}>Image prête à envoyer</span>
                   </div>
                 )}
-                <div style={{ padding:`11px 13px calc(11px + env(safe-area-inset-bottom, 0px))`, borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center', background:surface }}>
+                <div style={{ padding:`11px calc(13px + env(safe-area-inset-right, 0px)) calc(11px + env(safe-area-inset-bottom, 0px)) calc(13px + env(safe-area-inset-left, 0px))`, borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center', background:surface, overflowX:'hidden' }}>
                   <input type="text" placeholder={`Message à ${activeChat.name}...`} value={newMessage}
                     onChange={e=>setNewMessage(e.target.value)}
                     onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&sendMessage()}
-                    style={{ flex:1, padding:'10px 14px', border:`1.5px solid ${borderStrong}`, borderRadius:'50px', outline:'none', color:text, backgroundColor:darkMode?'rgba(255,255,255,0.06)':'white', fontSize:'0.84rem', fontFamily:'inherit', transition:'border-color 0.2s' }}
+                    style={{ flex:1, minWidth:0, padding:'10px 14px', border:`1.5px solid ${borderStrong}`, borderRadius:'50px', outline:'none', color:text, backgroundColor:darkMode?'rgba(255,255,255,0.06)':'white', fontSize:'0.84rem', fontFamily:'inherit', transition:'border-color 0.2s' }}
                     onFocus={e=>e.target.style.borderColor='#ea580c'}
                     onBlur={e=>e.target.style.borderColor=borderStrong} />
                   <label style={{ cursor:'pointer', display:'flex', justifyContent:'center', alignItems:'center', width:'38px', height:'38px', borderRadius:'50%', background:previewImage?'linear-gradient(135deg,#ea580c,#f97316)':'#e2e8f0', color:previewImage?'white':'#94a3b8', transition:'all 0.25s', flexShrink:0 }} title="Ajouter une image">
