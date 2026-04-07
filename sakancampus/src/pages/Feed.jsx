@@ -1035,6 +1035,8 @@ export default function Feed() {
     reader.readAsDataURL(file);
   };
 
+  // Keep polling callback stable; helper deps are intentionally static here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchConversations = useCallback(async () => {
     try {
       const token = localStorage.getItem('sc_token');
@@ -1066,6 +1068,7 @@ export default function Feed() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadMessagesWithUser = useCallback(async (userId, refreshList = true) => {
     try {
       const token = localStorage.getItem('sc_token');
@@ -1177,12 +1180,14 @@ export default function Feed() {
   // ── EFFECTS ──
   useEffect(() => { if (selectedProfile) setDetailImgIdx(0); }, [selectedProfile]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const storedTheme = localStorage.getItem('sc_dark_mode');
     if (storedTheme === '1') setDarkMode(true);
     if (storedTheme === '0') setDarkMode(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     localStorage.setItem('sc_dark_mode', darkMode ? '1' : '0');
   }, [darkMode]);
@@ -2129,7 +2134,7 @@ export default function Feed() {
 
   // ── LOGIN SCREEN ──
   // redirect to /login when logged out
-  useEffect(() => { if (!isLoggedIn) navigate('/login'); }, [isLoggedIn]);
+  useEffect(() => { if (!isLoggedIn) navigate('/login'); }, [isLoggedIn, navigate]);
   if (!isLoggedIn) return null;
 
   return (
