@@ -121,7 +121,10 @@ router.post('/register', registerRules, async (req, res) => {
 
   } catch (err) {
     console.error('REGISTER ERROR:', err);
-    res.status(500).json({ success: false, message: 'Erreur lors de l\'inscription.' });
+    res.status(500).json({
+      success: false,
+      message: err?.message || 'Erreur lors de l\'inscription.',
+    });
   }
 });
 
