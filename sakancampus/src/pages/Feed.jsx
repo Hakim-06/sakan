@@ -1964,7 +1964,9 @@ export default function Feed() {
     }
 
     @media(max-width: 700px){
-      .annonces-grid{grid-template-columns:1fr;gap:14px;padding:12px}
+      .annonces-grid{grid-template-columns:1fr;gap:12px;padding:10px}
+      .annonce-card{max-width:340px;width:100%;margin:0 auto}
+      .image-wrapper{height:170px}
       .tabs-wrapper{top:58px}
       .tabs-container{justify-content:flex-start;gap:14px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
       .tabs-container::-webkit-scrollbar{display:none}
@@ -2063,6 +2065,11 @@ export default function Feed() {
         color:${text};
         font-weight:900;
       }
+    }
+
+    @media(max-width: 420px){
+      .annonce-card{max-width:320px}
+      .image-wrapper{height:158px}
     }
   `;
 
