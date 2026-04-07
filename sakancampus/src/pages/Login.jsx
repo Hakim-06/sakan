@@ -298,7 +298,9 @@ export default function Login() {
         if (res.status === 403 && data.message && data.message.toLowerCase().includes('non vérifié')) {
           const normalizedEmail = (email || '').trim().toLowerCase();
           setPendingVerificationEmail(normalizedEmail);
-          navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
+          setInfo('Email non vérifié. Entre le code reçu par email.');
+          setError('');
+          return;
         }
         throw new Error(data.message || `Erreur serveur (${res.status}).`);
       }
@@ -316,7 +318,6 @@ export default function Login() {
           }
           setMode('login');
           setPassword('');
-          navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
           return;
         }
       }
@@ -369,6 +370,7 @@ export default function Login() {
       <line x1="1" y1="1" x2="23" y2="23"/>
     </svg>
   );
+  const isVerificationStep = mode === 'login' && !!pendingVerificationEmail;
 
   return (
     <div className="sc-login-root" style={{ width: '100vw', height: '100vh', display: 'flex', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', position: 'relative' }}>
@@ -533,15 +535,16 @@ export default function Login() {
             {/* Title */}
             <div style={{ marginBottom:'24px' }}>
               <h2 style={{ fontFamily:"'Playfair Display', Georgia, serif", fontSize:'1.9rem', fontWeight:'800', color:'#0f172a', margin:'0 0 6px', letterSpacing:'-0.5px' }}>
-                {mode === 'login' ? 'Bon retour 👋' : 'Créer un compte'}
+                {isVerificationStep ? 'Vérifie ton email' : (mode === 'login' ? 'Bon retour 👋' : 'Créer un compte')}
               </h2>
               <p style={{ color:'#64748b', fontSize:'0.88rem', margin:0 }}>
-                {mode === 'login' ? 'Connecte-toi à ton espace SakanCampus' : "Rejoins la communauté — c'est gratuit"}
+                {isVerificationStep ? 'Entre le code à 6 chiffres reçu par email' : (mode === 'login' ? 'Connecte-toi à ton espace SakanCampus' : "Rejoins la communauté — c'est gratuit")}
               </p>
             </div>
 
             {/* Google */}
             {/* BOUTONA DYAL GOOGLE */}
+{!isVerificationStep && (
 <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
   <GoogleLogin
     onSuccess={handleGoogleSuccess}
@@ -551,16 +554,73 @@ export default function Login() {
     }}
   />
 </div>
+)}
             {/* Divider */}
+            {!isVerificationStep && (
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px' }}>
               <div style={{ flex:1, height:'1px', background:'#f1f5f9' }} />
               <span style={{ color:'#94a3b8', fontSize:'0.72rem', fontWeight:'700', letterSpacing:'1px', whiteSpace:'nowrap' }}>OU PAR EMAIL</span>
               <div style={{ flex:1, height:'1px', background:'#f1f5f9' }} />
             </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
 
+              {isVerificationStep ? (
+                <>
+                  <input className="sc-placeholder" type="email" placeholder="Adresse email" value={pendingVerificationEmail || email} onChange={e => {
+                    const next = e.target.value;
+                    setPendingVerificationEmail(next.trim().toLowerCase());
+                    setEmail(next);
+                  }}
+                    onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} required style={inputStyle('email')} />
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    className="sc-placeholder"
+                    placeholder="Code à 6 chiffres"
+                    value={verificationCode}
+                    onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    style={{ ...inputStyle('verifyCode'), letterSpacing:'4px', textAlign:'center', fontWeight:'800' }}
+                  />
+
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <button
+                      type="button"
+                      onClick={submitEmailVerificationCode}
+                      disabled={isVerifyingCode || verificationCode.length !== 6}
+                      style={{ flex:1, padding:'12px', borderRadius:'11px', background:(isVerifyingCode || verificationCode.length !== 6)?'#bfdbfe':'#1d4ed8', color:'white', fontWeight:'800', fontSize:'0.86rem', border:'none', cursor:(isVerifyingCode || verificationCode.length !== 6)?'default':'pointer', fontFamily:'inherit' }}
+                    >
+                      {isVerifyingCode ? 'Vérification...' : 'Valider code'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={requestVerificationResend}
+                      style={{ flex:1, padding:'12px', borderRadius:'11px', background:'#dbeafe', color:'#1e3a8a', fontWeight:'800', fontSize:'0.86rem', border:'1px solid #93c5fd', cursor:'pointer', fontFamily:'inherit' }}
+                    >
+                      Renvoyer code
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingVerificationEmail('');
+                      setVerificationCode('');
+                      setInfo('');
+                      setError('');
+                    }}
+                    style={{ width:'100%', padding:'10px', borderRadius:'10px', background:'transparent', color:'#64748b', fontWeight:'700', fontSize:'0.83rem', border:'1px solid #e2e8f0', cursor:'pointer', fontFamily:'inherit' }}
+                  >
+                    Retour au login
+                  </button>
+                </>
+              ) : (
+                <>
               {mode === 'register' && (
                 <input className="sc-placeholder" type="text" placeholder="Ton prénom" value={name} onChange={e => setName(e.target.value)}
                   onFocus={() => setFocused('name')} onBlur={() => setFocused(null)} required style={inputStyle('name')} />
@@ -673,6 +733,8 @@ export default function Login() {
                   mode === 'login' ? 'Se connecter →' : 'Créer mon compte →'
                 )}
               </button>
+                </>
+              )}
 
             </form>
           </div>
