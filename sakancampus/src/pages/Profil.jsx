@@ -423,6 +423,7 @@ export default function Profil() {
                 </div>
               </div>
               <span style={{ fontSize:'0.74rem', fontWeight:'700', color:'#64748b' }}>Cliquer pour ajouter photo</span>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleImg} />
             </div>
           )}
 
