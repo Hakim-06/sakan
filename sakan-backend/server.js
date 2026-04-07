@@ -4,6 +4,7 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const morgan     = require('morgan');
 const rateLimit  = require('express-rate-limit');
+const mongoose   = require('mongoose');
 const connectDB  = require('./config/db');
 
 const app = express();
@@ -104,6 +105,17 @@ app.use('/api/contact',   require('./routes/contact'));
 // ─── Health check ────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'SakanCampus API is running 🚀', timestamp: new Date() });
+});
+
+app.get('/api/health/db', (req, res) => {
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const state = states[mongoose.connection.readyState] || `unknown(${mongoose.connection.readyState})`;
+  res.json({
+    success: mongoose.connection.readyState === 1,
+    dbState: state,
+    hasMongoUri: Boolean(process.env.MONGODB_URI || process.env.MONGO_URI),
+    timestamp: new Date(),
+  });
 });
 
 // ─── 404 Handler ─────────────────────────────────────
