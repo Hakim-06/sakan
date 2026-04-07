@@ -2066,6 +2066,22 @@ export default function Feed() {
         color:${text};
         font-weight:900;
       }
+
+      .mobile-msg-overlay{
+        justify-content:center!important;
+        align-items:flex-end!important;
+        padding:0 6px calc(6px + env(safe-area-inset-bottom, 0px));
+      }
+      .mobile-msg-sheet{
+        width:100%!important;
+        max-width:560px;
+        height:min(78dvh, 78vh)!important;
+        border-radius:16px 16px 0 0!important;
+        border:1px solid ${border}!important;
+        border-bottom:none!important;
+        overflow:hidden;
+      }
+      .msg-bubble{max-width:88%;font-size:0.8rem}
     }
 
     @media(max-width: 420px){
@@ -3055,8 +3071,8 @@ export default function Feed() {
           MESSAGERIE DRAWER
       ══════════════════════════════════════════════ */}
       {isMessagesOpen && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(8,15,30,0.6)', zIndex:5000, display:'flex', justifyContent:'flex-end' }} data-backdrop="true" onMouseDown={e=>{e.currentTarget._mdOnBg = (e.target === e.currentTarget);}} onMouseUp={e=>{if(e.currentTarget._mdOnBg && e.target===e.currentTarget){setIsMessagesOpen(false);setActiveConvId(null);} e.currentTarget._mdOnBg=false;}}>
-          <div style={{ width:isMobile?'100vw':'330px', maxWidth:'100vw', height:'100%', background:surface, boxShadow:`-20px 0 50px rgba(0,0,0,${darkMode?'0.4':'0.15'})`, display:'flex', flexDirection:'column', animation:'drawerIn 0.3s cubic-bezier(0.16,1,0.3,1)', borderLeft:`1px solid ${border}` }}>
+        <div className="mobile-msg-overlay" style={{ position:'fixed', inset:0, background:'rgba(8,15,30,0.6)', zIndex:5000, display:'flex', justifyContent:'flex-end' }} data-backdrop="true" onMouseDown={e=>{e.currentTarget._mdOnBg = (e.target === e.currentTarget);}} onMouseUp={e=>{if(e.currentTarget._mdOnBg && e.target===e.currentTarget){setIsMessagesOpen(false);setActiveConvId(null);} e.currentTarget._mdOnBg=false;}}>
+          <div className="mobile-msg-sheet" style={{ width:isMobile?'100vw':'330px', maxWidth:'100vw', height:'100%', background:surface, boxShadow:`-20px 0 50px rgba(0,0,0,${darkMode?'0.4':'0.15'})`, display:'flex', flexDirection:'column', animation:'drawerIn 0.3s cubic-bezier(0.16,1,0.3,1)', borderLeft:`1px solid ${border}` }}>
             {/* HEADER */}
             <div style={{ padding:'16px 18px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
