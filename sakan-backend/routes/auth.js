@@ -9,6 +9,19 @@ const { sendEmail } = require('../utils/mailer');
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const buildFrontendUrl = (req) => {
+  const forwardedHost = req?.headers?.['x-forwarded-host'];
+  const host = forwardedHost || req?.headers?.host;
+  if (host) return `https://${host.replace(/\/$/, '')}`;
+
+  const envUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+  if (envUrl) return String(envUrl).replace(/\/$/, '');
+
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, '')}`;
+
+  return 'http://localhost:5173';
+};
+
 // ─── Helper: send token response ─────────────────────
 const sendToken = (user, statusCode, res) => {
   const token = generateToken(user._id);
@@ -77,7 +90,7 @@ router.post('/register', registerRules, async (req, res) => {
       emailVerifyTokenExpires: expiresAt,
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    const frontendUrl = buildFrontendUrl(req);
     const verifyUrl = `${frontendUrl}/login?verifyToken=${rawToken}`;
     let mailResult = { sent: false, reason: 'unknown' };
     try {
@@ -226,7 +239,7 @@ router.post('/resend-verification', resendVerificationRules, async (req, res) =>
     user.emailVerifyTokenExpires = expiresAt;
     await user.save({ validateBeforeSave: false });
 
-    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    const frontendUrl = buildFrontendUrl(req);
     const verifyUrl = `${frontendUrl}/login?verifyToken=${rawToken}`;
     const mailResult = await sendEmail({
       to: email,
@@ -287,7 +300,7 @@ router.post('/forgot-password', forgotPasswordRules, async (req, res) => {
     user.passwordResetTokenExpires = expiresAt;
     await user.save({ validateBeforeSave: false });
 
-    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+    const frontendUrl = buildFrontendUrl(req);
     const resetUrl = `${frontendUrl}/login?resetToken=${rawToken}`;
 
     const mailResult = await sendEmail({
