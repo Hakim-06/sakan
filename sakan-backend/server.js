@@ -104,9 +104,14 @@ app.use((err, req, res, next) => {
 
 // ─── Start Server ─────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 SakanCampus API démarré sur le port ${PORT}`);
-  console.log(`   Mode: ${process.env.NODE_ENV}`);
-  console.log(`   URL:  http://localhost:${PORT}/api/health\n`);
-  console.log(`   CORS origins: ${allowedOrigins.join(', ')}`);
-});
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 SakanCampus API démarré sur le port ${PORT}`);
+    console.log(`   Mode: ${process.env.NODE_ENV}`);
+    console.log(`   URL:  http://localhost:${PORT}/api/health\n`);
+    console.log(`   CORS origins: ${allowedOrigins.join(', ')}`);
+  });
+}
+
+module.exports = app;
