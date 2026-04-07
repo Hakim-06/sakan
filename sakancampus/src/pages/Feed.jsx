@@ -1976,6 +1976,59 @@ export default function Feed() {
       .mobile-two-col{grid-template-columns:1fr!important}
       .mobile-modal{border-radius:16px!important;max-height:96vh!important}
       .detail-left,.detail-right{padding:14px}
+
+      .mobile-bottom-nav{
+        position:fixed;
+        left:10px;
+        right:10px;
+        bottom:10px;
+        z-index:1400;
+        display:grid;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        gap:6px;
+        padding:8px;
+        border-radius:18px;
+        border:1px solid ${borderStrong};
+        background:${darkMode?'rgba(15,23,42,0.95)':'rgba(255,255,255,0.95)'};
+        backdrop-filter:blur(14px);
+        box-shadow:0 12px 30px rgba(0,0,0,${darkMode?'0.45':'0.16'});
+      }
+      .mobile-bottom-item{
+        border:none;
+        border-radius:12px;
+        padding:8px 4px;
+        background:transparent;
+        color:${textMuted};
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:3px;
+        font-size:0.64rem;
+        font-weight:800;
+        cursor:pointer;
+        position:relative;
+      }
+      .mobile-bottom-item.active{
+        background:${darkMode?'rgba(234,88,12,0.18)':'#fff7ed'};
+        color:#ea580c;
+      }
+      .mobile-bottom-badge{
+        position:absolute;
+        top:4px;
+        right:6px;
+        min-width:16px;
+        height:16px;
+        border-radius:999px;
+        background:#ea580c;
+        color:white;
+        font-size:0.6rem;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:0 5px;
+        font-weight:900;
+      }
     }
   `;
 
@@ -1985,7 +2038,7 @@ export default function Feed() {
   if (!isLoggedIn) return null;
 
   return (
-    <div style={{ background:bg, color:text, minHeight:'100vh', width:'100%', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflowX:'hidden', transition:'background 0.4s,color 0.3s' }}>
+    <div style={{ background:bg, color:text, minHeight:'100vh', width:'100%', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflowX:'hidden', transition:'background 0.4s,color 0.3s', paddingBottom:isMobile?'86px':'0' }}>
       <Toast toasts={toasts} />
       <style>{css}</style>
 
@@ -2061,7 +2114,7 @@ export default function Feed() {
       </nav>
 
       {/* ── TABS ── */}
-      <div className="tabs-wrapper">
+      {!isMobile && <div className="tabs-wrapper">
         <div className="tabs-container">
           {[
             ['toutes', isMobile ? 'Toutes' : 'Toutes les annonces', <I.home width="13" height="13"/>, filteredToutes.length],
@@ -2077,7 +2130,7 @@ export default function Feed() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* ── HEADER ── */}
       <div className="tab-animate" style={{ padding:isMobile?'0 12px':'0 5%', margin:isMobile?'16px 0 8px':'32px 0 10px', textAlign:'center', zIndex:950, position:'relative' }}>
@@ -2356,7 +2409,7 @@ export default function Feed() {
       )}
 
       {/* AI ASSISTANT */}
-      <div ref={aiPanelRef} style={{ position:'fixed', right:'20px', bottom:'20px', zIndex:1200 }}>
+      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?'86px':'20px', zIndex:1200 }}>
         {isAiOpen && (
           <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', marginBottom:isAiCompactMobile?'6px':'10px', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:isAiCompactMobile?'fixed':'relative', right:isAiCompactMobile?'6px':undefined, bottom:isAiCompactMobile?'6px':undefined }}>
             <div style={{ padding:'12px 14px', borderBottom:`1px solid ${border}`, background:darkMode?'linear-gradient(135deg,rgba(30,41,59,0.85),rgba(15,23,42,0.92))':'linear-gradient(135deg,#fff7ed,#ffffff)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -2441,6 +2494,28 @@ export default function Feed() {
           <I.bot width="22" height="22" />
         </button>
       </div>
+
+      {isMobile && (
+        <div className="mobile-bottom-nav">
+          {[
+            ['toutes', 'Toutes', <I.home width="14" height="14" />, filteredToutes.length],
+            ['matching', 'Match', <I.zap width="14" height="14" />, filteredMatching.length],
+            ['mes_annonces', 'Mes', <I.edit width="14" height="14" />, mesAnnonces.length],
+            ['favoris', 'Fav', <I.heart width="14" height="14" />, filteredFavoris.length],
+            ['contact', 'Aide', <I.mail width="14" height="14" />, 0],
+          ].map(([key, label, icon, count]) => (
+            <button
+              key={key}
+              className={`mobile-bottom-item ${activeTab===key?'active':''}`}
+              onClick={() => setActiveTab(key)}
+            >
+              {icon}
+              <span>{label}</span>
+              {count>0 && <span className="mobile-bottom-badge">{count}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════
           MODAL DETAIL
