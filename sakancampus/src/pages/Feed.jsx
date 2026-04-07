@@ -1796,6 +1796,7 @@ export default function Feed() {
   const matchingProgress = ((matchingThreshold - 50) / 45) * 100;
   const hasPriceFilter = !!priceMin || !!priceMax;
   const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
+  const isMobile = isAiCompactMobile;
   const contactCanSubmit =
     contactForm.name.trim().length >= 2 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactForm.email.trim()) &&
@@ -1960,6 +1961,19 @@ export default function Feed() {
       .contact-shell{grid-template-columns:1fr;width:calc(100% - 24px)}
       .contact-panel{padding:16px}
     }
+
+    @media(max-width: 700px){
+      .annonces-grid{grid-template-columns:1fr;gap:14px;padding:12px}
+      .tabs-wrapper{top:58px}
+      .tabs-container{justify-content:flex-start;gap:14px;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+      .tabs-container::-webkit-scrollbar{display:none}
+      .tab-item{padding:13px 0;font-size:0.76rem}
+      .tab-count{font-size:0.62rem}
+      .publish-btn{padding:8px 12px;font-size:0.76rem}
+      .mobile-two-col{grid-template-columns:1fr!important}
+      .mobile-modal{border-radius:16px!important;max-height:96vh!important}
+      .detail-left,.detail-right{padding:14px}
+    }
   `;
 
   // ── LOGIN SCREEN ──
@@ -1977,16 +1991,16 @@ export default function Feed() {
       {darkMode && <div style={{ position:'fixed', top:'-20%', right:'-10%', width:'600px', height:'600px', borderRadius:'50%', background:'radial-gradient(circle, rgba(234,88,12,0.06) 0%, transparent 70%)', pointerEvents:'none', zIndex:0, filter:'blur(80px)' }} />}
 
       {/* ── NAVBAR ── */}
-      <nav style={{ padding:'0 5%', height:'64px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:`1px solid ${border}`, position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', backdropFilter:'blur(20px)', zIndex:1000 }}>
+      <nav style={{ padding:isMobile?'0 10px':'0 5%', height:isMobile?'58px':'64px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:`1px solid ${border}`, position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', backdropFilter:'blur(20px)', zIndex:1000 }}>
         {/* LOGO */}
         <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
           <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#ea580c,#f97316)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(234,88,12,0.35)' }}>
             <I.home width="18" height="18" style={{ color:'white' }} />
           </div>
-          <h2 style={{ margin:0, color:text, fontSize:'1.18rem', fontWeight:'900', letterSpacing:'-0.5px' }}>Sakan<span style={{ color:'#ea580c' }}>Campus</span></h2>
+          {!isMobile && <h2 style={{ margin:0, color:text, fontSize:'1.18rem', fontWeight:'900', letterSpacing:'-0.5px' }}>Sakan<span style={{ color:'#ea580c' }}>Campus</span></h2>}
         </div>
 
-        <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:isMobile?'6px':'10px' }}>
           <button className="publish-btn" onClick={() => setIsCreateAdOpen(true)}>
             <I.plus width="14" height="14" /> Publier
           </button>
@@ -2057,8 +2071,8 @@ export default function Feed() {
       </div>
 
       {/* ── HEADER ── */}
-      <div className="tab-animate" style={{ padding:'0 5%', margin:'32px 0 10px', textAlign:'center', zIndex:950, position:'relative' }}>
-        <h1 style={{ fontSize:'1.75rem', fontWeight:'900', color:text, margin:'0 0 4px', letterSpacing:'-0.5px' }}>
+      <div className="tab-animate" style={{ padding:isMobile?'0 12px':'0 5%', margin:isMobile?'16px 0 8px':'32px 0 10px', textAlign:'center', zIndex:950, position:'relative' }}>
+        <h1 style={{ fontSize:isMobile?'1.2rem':'1.75rem', fontWeight:'900', color:text, margin:'0 0 4px', letterSpacing:'-0.5px' }}>
           {activeTab==='toutes'
             ? 'Trouve ton logement idéal'
             : activeTab==='matching'
@@ -2078,7 +2092,7 @@ export default function Feed() {
             <label className="pro-label">
               <I.zap width="12" height="12" style={{color:'#ea580c'}}/>Seuil minimum de matching
             </label>
-            <div style={{ display:'grid', gridTemplateColumns:'96px 1fr', gap:'10px', alignItems:'center' }}>
+            <div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'96px 1fr', gap:'10px', alignItems:'center' }}>
               <input
                 type="number"
                 min="50"
@@ -2120,7 +2134,7 @@ export default function Feed() {
         {activeTab==='toutes' && (
           <div style={{ maxWidth:'620px', margin:'0 auto' }}>
             <div ref={searchRef} style={{ position:'relative' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'10px', alignItems:'center' }}>
+              <div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'1fr auto', gap:'10px', alignItems:'center' }}>
                 <div style={{ display:'flex', alignItems:'center', background:surface, borderRadius:'50px', padding:'10px 20px', border:`1.5px solid ${isDropdownOpen?'#ea580c':borderStrong}`, boxShadow:`0 8px 25px rgba(0,0,0,${darkMode?'0.2':'0.06'})`, transition:'all 0.25s' }}>
                 <I.search width="16" height="16" style={{ color:textMuted, flexShrink:0 }} />
                 <input type="text" placeholder="Rechercher par ville..." value={searchCity}
@@ -2168,7 +2182,7 @@ export default function Feed() {
                         </button>
                       </div>
 
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', alignItems:'center' }}>
+                      <div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'1fr 1fr', gap:'8px', alignItems:'center' }}>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -2209,7 +2223,7 @@ export default function Feed() {
                         })}
                       </div>
 
-                      <div style={{ marginTop:'12px', display:'grid', gridTemplateColumns:'auto auto 1fr', gap:'8px' }}>
+                      <div style={{ marginTop:'12px', display:'grid', gridTemplateColumns:isMobile?'1fr':'auto auto 1fr', gap:'8px' }}>
                         <button
                           className="btn-secondary"
                           onClick={() => { setDraftPriceMin(''); setDraftPriceMax(''); setPriceMin(''); setPriceMax(''); setIsPriceFiltersOpen(false); }}
@@ -2556,9 +2570,9 @@ export default function Feed() {
       ══════════════════════════════════════════════ */}
       {isSettingsOpen && (
         <Overlay onClose={()=>setIsSettingsOpen(false)} zIndex={9999}>
-          <div style={{ background:bg, width:'100%', maxWidth:'820px', height:'64vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflow:'hidden', display:'flex', animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)', border:`1px solid ${border}` }} onClick={e=>e.stopPropagation()}>
+          <div className="mobile-modal" style={{ background:bg, width:'100%', maxWidth:'820px', height:isMobile?'86vh':'64vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflow:'hidden', display:'flex', animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)', border:`1px solid ${border}` }} onClick={e=>e.stopPropagation()}>
             {/* SIDEBAR */}
-            <div style={{ width:'200px', background: darkMode?'rgba(255,255,255,0.02)':'#f8fafc', borderRight:`1px solid ${border}`, padding:'22px 16px', display:'flex', flexDirection:'column' }}>
+            <div style={{ width:isMobile?'140px':'200px', background: darkMode?'rgba(255,255,255,0.02)':'#f8fafc', borderRight:`1px solid ${border}`, padding:isMobile?'14px 10px':'22px 16px', display:'flex', flexDirection:'column' }}>
               <h2 style={{ margin:'0 0 18px', fontSize:'1rem', color:text, fontWeight:'800', paddingLeft:'6px' }}>Paramètres</h2>
               {[{key:'compte',icon:<I.user width="14" height="14"/>,label:'Compte'},{key:'confidentialite',icon:<I.lock width="14" height="14"/>,label:'Confidentialité'},{key:'notifications',icon:<I.bell width="14" height="14"/>,label:'Notifications'}].map(({key,icon,label})=>(
                 <div key={key} className={`settings-item ${settingsTab===key?'active':''}`} onClick={()=>setSettingsTab(key)}>
@@ -2716,7 +2730,7 @@ export default function Feed() {
       ══════════════════════════════════════════════ */}
       {isMyProfileOpen && editProfile && (
         <Overlay onClose={()=>setIsMyProfileOpen(false)} zIndex={9999}>
-          <div className="scroll-area" style={{ background:bg, width:'100%', maxWidth:'560px', maxHeight:'92vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflowY:'auto', border:`1px solid ${border}`, animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)' }} onClick={e=>e.stopPropagation()}>
+          <div className="mobile-modal scroll-area" style={{ background:bg, width:'100%', maxWidth:'560px', maxHeight:'92vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflowY:'auto', border:`1px solid ${border}`, animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)' }} onClick={e=>e.stopPropagation()}>
             {/* STICKY HEADER */}
             <div style={{ padding:'18px 22px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', zIndex:5, backdropFilter:'blur(16px)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'9px' }}>
@@ -2737,7 +2751,7 @@ export default function Feed() {
               <ProfileCompletion profile={editProfile} darkMode={darkMode} />
               <ProfilePhotoUploader src={editProfile.image} onChange={url=>setEditProfile(p=>({...p,image:url}))} />
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
+              <div className="mobile-two-col" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
                 <div>
                   <label className="pro-label"><I.user width="12" height="12" style={{color:'#ea580c'}}/>Prénom *</label>
                   <input type="text" className="pro-input" value={editProfile.name} onChange={e=>setEditProfile(p=>({...p,name:e.target.value}))} />
@@ -2753,7 +2767,7 @@ export default function Feed() {
                 <input type="text" className="pro-input" value={editProfile.ecole} onChange={e=>setEditProfile(p=>({...p,ecole:e.target.value}))} placeholder="ENCG Settat, FST Casa..." />
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
+              <div className="mobile-two-col" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
                 <div>
                   <label className="pro-label"><I.user width="12" height="12" style={{color:'#ea580c'}}/>Genre</label>
                   <select className="pro-input" value={editProfile.gender} onChange={e=>setEditProfile(p=>({...p,gender:e.target.value}))}>
@@ -2766,7 +2780,7 @@ export default function Feed() {
                 </div>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
+              <div className="mobile-two-col" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
                 <div>
                   <label className="pro-label"><I.pin width="12" height="12" style={{color:'#ea580c'}}/>Ville cible</label>
                   <select className="pro-input" value={editProfile.city||''} onChange={e=>setEditProfile(p=>({...p,city:e.target.value}))}>
@@ -2821,7 +2835,7 @@ export default function Feed() {
       ══════════════════════════════════════════════ */}
       {isCreateAdOpen && (
         <Overlay onClose={closeCreateAd} zIndex={9999}>
-          <div className="scroll-area" style={{ background:bg, width:'100%', maxWidth:'630px', maxHeight:'92vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflowY:'auto', border:`1px solid ${border}`, animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)' }} onClick={e=>e.stopPropagation()}>
+          <div className="mobile-modal scroll-area" style={{ background:bg, width:'100%', maxWidth:'630px', maxHeight:'92vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflowY:'auto', border:`1px solid ${border}`, animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)' }} onClick={e=>e.stopPropagation()}>
             {/* HEADER */}
             <div style={{ padding:'18px 22px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', zIndex:5, backdropFilter:'blur(16px)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
@@ -2837,7 +2851,7 @@ export default function Feed() {
             </div>
 
             <div style={{ padding:'22px' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', marginBottom:'20px' }}>
+              <div className="mobile-two-col" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', marginBottom:'20px' }}>
                 <div>
                   <label className="pro-label"><I.pin width="12" height="12" style={{color:'#ea580c'}}/>Ville *</label>
                   <select className="pro-input" value={newAdData.city} onChange={e=>setNewAdData(p=>({...p,city:e.target.value}))}>
@@ -2898,7 +2912,7 @@ export default function Feed() {
       ══════════════════════════════════════════════ */}
       {isMessagesOpen && (
         <div style={{ position:'fixed', inset:0, background:'rgba(8,15,30,0.6)', zIndex:5000, display:'flex', justifyContent:'flex-end' }} data-backdrop="true" onMouseDown={e=>{e.currentTarget._mdOnBg = (e.target === e.currentTarget);}} onMouseUp={e=>{if(e.currentTarget._mdOnBg && e.target===e.currentTarget){setIsMessagesOpen(false);setActiveConvId(null);} e.currentTarget._mdOnBg=false;}}>
-          <div style={{ width:'330px', height:'100%', background:surface, boxShadow:`-20px 0 50px rgba(0,0,0,${darkMode?'0.4':'0.15'})`, display:'flex', flexDirection:'column', animation:'drawerIn 0.3s cubic-bezier(0.16,1,0.3,1)', borderLeft:`1px solid ${border}` }}>
+          <div style={{ width:isMobile?'100vw':'330px', maxWidth:'100vw', height:'100%', background:surface, boxShadow:`-20px 0 50px rgba(0,0,0,${darkMode?'0.4':'0.15'})`, display:'flex', flexDirection:'column', animation:'drawerIn 0.3s cubic-bezier(0.16,1,0.3,1)', borderLeft:`1px solid ${border}` }}>
             {/* HEADER */}
             <div style={{ padding:'16px 18px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
