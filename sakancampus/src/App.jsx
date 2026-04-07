@@ -4,6 +4,7 @@ import Login  from './pages/Login';
 import Profil from './pages/Profil';
 import Feed   from './pages/Feed';
 import Contact from './pages/Contact';
+import VerifyEmail from './pages/VerifyEmail';
 
 // -- Route protegee: besoin token
 const PrivateRoute = ({ children }) => {
@@ -36,6 +37,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login"  element={<Login />} />
+        <Route path="/verify-email"  element={<VerifyEmail />} />
         <Route path="/contact" element={<Contact />} />
 
         {/* Profil setup */}

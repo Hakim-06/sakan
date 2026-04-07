@@ -16,10 +16,32 @@ const generateEmailOtpCode = () => String(Math.floor(100000 + Math.random() * 90
 const hashOtp = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
 const buildVerifyEmailHtml = (name, code) => `
-  <p>Bonjour ${name || ''},</p>
-  <p>Voici ton code de verification SakanCampus:</p>
-  <p style="font-size:22px;font-weight:800;letter-spacing:4px;margin:14px 0">${code}</p>
-  <p>Ce code expire dans 10 minutes.</p>
+  <div style="margin:0;padding:24px 0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
+      <tr>
+        <td style="padding:20px 22px;background:linear-gradient(135deg,#ea580c,#f97316);color:#fff;">
+          <div style="font-size:20px;font-weight:800;letter-spacing:0.2px;">SakanCampus</div>
+          <div style="margin-top:4px;font-size:12px;opacity:0.92;">Verification de compte</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:22px;">
+          <p style="margin:0 0 10px;font-size:15px;line-height:1.6;">Bonjour ${name || ''},</p>
+          <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:#334155;">Merci pour ton inscription. Utilise ce code pour verifier ton email et activer ton compte.</p>
+          <div style="margin:0 0 14px;padding:14px 12px;border:1px dashed #fdba74;border-radius:10px;background:#fff7ed;text-align:center;">
+            <div style="font-size:28px;line-height:1;font-weight:900;letter-spacing:6px;color:#9a3412;">${code}</div>
+          </div>
+          <p style="margin:0 0 10px;font-size:13px;color:#475569;">Ce code expire dans <strong>10 minutes</strong>.</p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Si tu n'as pas demande ce code, ignore simplement ce message.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px 22px 18px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;">
+          SakanCampus - Plateforme de colocation etudiante
+        </td>
+      </tr>
+    </table>
+  </div>
 `;
 
 const buildFrontendUrl = (req) => {

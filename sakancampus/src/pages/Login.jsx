@@ -31,6 +31,12 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search);
     const reset = params.get('resetToken');
     const verify = params.get('verifyToken');
+    const verifiedEmail = params.get('verifiedEmail');
+
+    if (verifiedEmail) {
+      setEmail(String(verifiedEmail).trim().toLowerCase());
+      setInfo('Email vérifié. Connecte-toi maintenant.');
+    }
 
     if (reset) {
       setResetToken(reset);
@@ -290,7 +296,9 @@ export default function Login() {
 
       if (!res.ok) {
         if (res.status === 403 && data.message && data.message.toLowerCase().includes('non vérifié')) {
-          setPendingVerificationEmail((email || '').trim().toLowerCase());
+          const normalizedEmail = (email || '').trim().toLowerCase();
+          setPendingVerificationEmail(normalizedEmail);
+          navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
         }
         throw new Error(data.message || `Erreur serveur (${res.status}).`);
       }
@@ -308,6 +316,7 @@ export default function Login() {
           }
           setMode('login');
           setPassword('');
+          navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`);
           return;
         }
       }
