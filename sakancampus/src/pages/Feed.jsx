@@ -2106,6 +2106,9 @@ export default function Feed() {
 
       .profile-header{padding:12px 14px!important;gap:8px;align-items:flex-start!important}
       .profile-actions{display:flex;gap:6px;align-items:center}
+      .profile-body{padding:14px!important}
+      .profile-actions button{font-size:0.74rem!important;white-space:nowrap}
+      .mobile-modal{width:calc(100vw - 10px)!important;max-width:calc(100vw - 10px)!important;max-height:calc(100dvh - 8px)!important}
     }
 
     @media(max-width: 420px){
@@ -2931,8 +2934,8 @@ export default function Feed() {
               </div>
             </div>
 
-            <div style={{ padding:'22px' }}>
-              <ProfileCompletion profile={editProfile} darkMode={darkMode} />
+            <div className="profile-body" style={{ padding:'22px' }}>
+              {!isMobile && <ProfileCompletion profile={editProfile} darkMode={darkMode} />}
               <ProfilePhotoUploader src={editProfile.image} onChange={url=>setEditProfile(p=>({...p,image:url}))} />
 
               <div className="mobile-two-col" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'14px' }}>
