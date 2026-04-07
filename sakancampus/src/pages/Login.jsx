@@ -210,6 +210,16 @@ export default function Login() {
         throw new Error(data.message || 'Vérification du code impossible.');
       }
 
+      if (data?.token && data?.user) {
+        localStorage.setItem('sc_token', data.token);
+        localStorage.setItem('sc_user', JSON.stringify(data.user));
+        setPendingVerificationEmail('');
+        setVerificationCode('');
+        setInfo(data.message || 'Email vérifié. Redirection...');
+        navigate('/profil');
+        return;
+      }
+
       setInfo(data.message || 'Email vérifié. Tu peux te connecter.');
       setPendingVerificationEmail('');
       setVerificationCode('');

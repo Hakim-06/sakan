@@ -285,9 +285,23 @@ router.post('/verify-email-code', [
     user.emailVerifyCodeHash = null;
     user.emailVerifyCodeExpires = null;
     user.emailVerifyCodeAttempts = 0;
+    user.isOnline = true;
+    user.lastSeen = new Date();
     await user.save({ validateBeforeSave: false });
 
-    return res.json({ success: true, message: 'Email vérifié avec succès. Tu peux te connecter.' });
+    const token = generateToken(user._id);
+    return res.json({
+      success: true,
+      message: 'Email vérifié avec succès. Connexion automatique effectuée.',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        photo: user.photo,
+        profileComplete: user.profileComplete,
+      },
+    });
   } catch (err) {
     console.error('VERIFY EMAIL CODE ERROR:', err);
     return res.status(500).json({ success: false, message: 'Erreur lors de la vérification du code.' });

@@ -49,6 +49,17 @@ export default function VerifyEmail() {
 
       if (!res.ok) throw new Error(data.message || 'Vérification impossible.');
 
+      if (data?.token && data?.user) {
+        localStorage.setItem('sc_token', data.token);
+        localStorage.setItem('sc_user', JSON.stringify(data.user));
+        setInfo(data.message || 'Email vérifié. Redirection...');
+        setCode('');
+        setTimeout(() => {
+          navigate('/profil', { replace: true });
+        }, 500);
+        return;
+      }
+
       setInfo(data.message || 'Email vérifié avec succès.');
       setCode('');
       setTimeout(() => {
