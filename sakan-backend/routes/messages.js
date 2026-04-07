@@ -1,7 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Message = require('../models/Message');
+const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { uploadMessage, deleteFromCloudinary } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -110,22 +112,60 @@ router.get('/:userId', protect, async (req, res) => {
 // ══════════════���═══════════════════════════════���═══════
 // POST /api/messages/:userId  — send a message
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// POST /api/messages/upload/image  — upload image for chat
+// ══════════════════════════════════════════════════════
+router.post('/upload/image', protect, uploadMessage.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Aucune image fournie.' });
+    }
+
+    res.json({
+      success: true,
+      imageUrl: req.file.path,
+      imagePublicId: req.file.filename,
+    });
+  } catch (err) {
+    console.error('MESSAGE IMAGE UPLOAD ERROR:', err);
+    res.status(500).json({ success: false, message: 'Erreur upload image.' });
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// POST /api/messages/:userId  — send a message
+// ══════════════════════════════════════════════════════
 router.post('/:userId', protect, async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, imageUrl, imagePublicId } = req.body;
     const { userId } = req.params;
 
-    if (!text || !text.trim()) {
-      return res.status(400).json({ success: false, message: 'Message vide.' });
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Destinataire invalide.' });
     }
+
+    const hasText = text && text.trim();
+    const hasImage = imageUrl && imagePublicId;
+
+    if (!hasText && !hasImage) {
+      return res.status(400).json({ success: false, message: 'Message ou image requis.' });
+    }
+
     if (userId === req.user._id.toString()) {
       return res.status(400).json({ success: false, message: 'Tu ne peux pas t\'envoyer un message.' });
+    }
+
+    const receiver = await User.findById(userId).select('_id');
+    if (!receiver) {
+      return res.status(404).json({ success: false, message: 'Destinataire introuvable.' });
     }
 
     const message = await Message.create({
       sender:   req.user._id,
       receiver: userId,
-      text:     text.trim(),
+      text:     hasText ? text.trim() : '',
+      imageUrl: imageUrl || null,
+      imagePublicId: imagePublicId || null,
     });
 
     await message.populate('sender', 'name photo');
@@ -133,6 +173,7 @@ router.post('/:userId', protect, async (req, res) => {
 
     res.status(201).json({ success: true, message });
   } catch (err) {
+    console.error('MESSAGE ERROR:', err);
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }
 });

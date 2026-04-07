@@ -51,6 +51,22 @@ const uploadAnnonce = multer({
   limits: { fileSize: 10 * 1024 * 1024, files: 6 }, // 10 MB / photo, max 6 photos
 });
 
+// ─── Storage for chat messages ───────────────────────
+const chatMessageStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder:         'sakancampus/messages',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, crop: 'scale', quality: 'auto' }],
+  },
+});
+
+const uploadMessage = multer({
+  storage: chatMessageStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB max per image
+});
+
 // ─── Delete from Cloudinary ──────────────────────────
 const deleteFromCloudinary = async (publicId) => {
   if (!publicId) return;
@@ -61,4 +77,4 @@ const deleteFromCloudinary = async (publicId) => {
   }
 };
 
-module.exports = { uploadProfile, uploadAnnonce, deleteFromCloudinary };
+module.exports = { uploadProfile, uploadAnnonce, uploadMessage, deleteFromCloudinary };

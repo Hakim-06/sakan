@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 
 
@@ -117,44 +116,52 @@ export default function Profil() {
   const fileRef = useRef(null);
    
   const generateBio = async () => {
-    // 1. N-t2ekdou wach s-smiya w les tags kaynin
     if (!name || selTags.length === 0) {
       alert("⚠️ Kteb s-smiya w khtar les tags!");
       return;
     }
 
-    // 2. N-jiybou s-sarout mn .env w n-vérifiweh 9bel ma n-bdaw
-    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-    
-    if (!API_KEY) {
-      console.error("⚠️ S-sarout d Gemini ma-lqaynahch! T2eked mn l-fichier .env w redémarrer l-serveur Vite.");
-      alert("⚠️ Mochkil f s-sarout dyal l-IA. T2eked mn l-fichier .env w redémarrer Vite.");
-      return; // N-7ebsou hna bach ma n-siftouch requete khawya l-Google
+    const token = localStorage.getItem('sc_token');
+    if (!token) {
+      alert("Session salat. 3awed login.");
+      return;
     }
-    
-    setGen(true); // N-bdaw l-chargement (Loading)
+
+    setGen(true);
     
     try {
       const traitsLabels = selTags.map(id => tags.find(t => t.id === id)?.label || id);
-      const prompt = `Écris une bio courte (max 3 phrases) pour un profil de colocation étudiant au Maroc. Nom: ${name}, Traits: ${traitsLabels.join(', ')}. Réponds uniquement avec la bio.`;
+      const res = await fetch('/api/ai/bio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          name,
+          age: age ? Number(age) : undefined,
+          gender,
+          ecole,
+          traits: traitsLabels,
+        }),
+      });
 
-      // 3. N-bdaw d-daka2 l-istina3i
-      const genAI = new GoogleGenerativeAI(API_KEY);
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
 
-      // 4. Hada howa l-model (Gemini 2.5 Pro)
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Generation bio impossible.');
+      }
 
-      // 5. N-jiybou l-Bio w n-tsennaw l-jawab
-      const result = await model.generateContent(prompt);
-      const bioText = result.response.text();
-      
-      setBio(bioText.trim()); // N-7ettou l-bio f l-khencha (state)
+      setBio((data.bio || '').trim());
 
     } catch (err) {
       console.error('AI error:', err);
       alert("W9e3 mochkil: " + err.message);
     } finally {
-      setGen(false); // N-7ebsou l-chargement wakha y-w9e3 mochkil wla la
+      setGen(false);
     }
   };
 

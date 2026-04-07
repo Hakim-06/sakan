@@ -2,6 +2,7 @@ const express = require('express');
 const Annonce = require('../models/Annonce');
 const { protect } = require('../middleware/auth');
 const { deleteFromCloudinary } = require('../middleware/upload');
+const { sortAnnoncesByCompatibility } = require('../utils/matching');
 
 const router = express.Router();
 
@@ -17,18 +18,21 @@ router.get('/', protect, async (req, res) => {
 
     const total    = await Annonce.countDocuments(filter);
     const annonces = await Annonce.find(filter)
-      .populate('owner', 'name age gender ecole photo isOnline lastSeen traits')
+      .populate('owner', 'name age gender ecole city budget bio photo isOnline lastSeen traits preferences profileComplete')
       .sort({ createdAt: -1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
 
+    const currentUser = req.user;
+    const sorted = sortAnnoncesByCompatibility(currentUser, annonces);
+
     res.json({
       success: true,
-      count: annonces.length,
+      count: sorted.length,
       total,
       pages: Math.ceil(total / Number(limit)),
       currentPage: Number(page),
-      annonces,
+      annonces: sorted,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
@@ -39,7 +43,7 @@ router.get('/', protect, async (req, res) => {
 router.get('/mine', protect, async (req, res) => {
   try {
     const annonces = await Annonce.find({ owner: req.user._id })
-      .populate('owner', 'name photo')
+      .populate('owner', 'name age gender ecole city budget bio photo isOnline lastSeen traits preferences profileComplete')
       .sort({ createdAt: -1 });
     res.json({ success: true, annonces });
   } catch (err) {
@@ -51,7 +55,7 @@ router.get('/mine', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
   try {
     const annonce = await Annonce.findById(req.params.id)
-      .populate('owner', 'name age gender ecole city budget bio traits photo isOnline lastSeen preferences');
+      .populate('owner', 'name age gender ecole city budget bio photo isOnline lastSeen traits preferences profileComplete');
     if (!annonce) return res.status(404).json({ success: false, message: 'Annonce introuvable.' });
     
     annonce.views += 1;
@@ -85,7 +89,7 @@ router.post('/', protect, async (req, res) => {
       isActive: true // 👈 Darouri t-koun true bach t-ban f l-Feed
     });
 
-    await annonce.populate('owner', 'name age ecole photo isOnline traits');
+    await annonce.populate('owner', 'name age gender ecole city budget bio photo isOnline lastSeen traits preferences profileComplete');
     res.status(201).json({ success: true, annonce });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -105,7 +109,7 @@ router.put('/:id', protect, async (req, res) => {
     allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
     annonce = await Annonce.findByIdAndUpdate(req.params.id, updates, {
       new: true, runValidators: true,
-    }).populate('owner', 'name age ecole photo isOnline traits');
+    }).populate('owner', 'name age gender ecole city budget bio photo isOnline lastSeen traits preferences profileComplete');
     res.json({ success: true, annonce });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

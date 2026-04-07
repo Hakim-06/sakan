@@ -9,6 +9,10 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [name, setName]       = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [resetPwd, setResetPwd] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
+  const [info, setInfo] = useState('');
   const [focused, setFocused] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
@@ -21,9 +25,155 @@ export default function Login() {
     l.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800;9..40,900&family=Playfair+Display:wght@700;800&display=swap';
     document.head.appendChild(l);
   }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reset = params.get('resetToken');
+    const verify = params.get('verifyToken');
+
+    if (reset) {
+      setResetToken(reset);
+      setMode('login');
+      setInfo('Lien de réinitialisation détecté. Choisis un nouveau mot de passe.');
+    }
+
+    if (verify) {
+      setMode('login');
+      setError('');
+      setInfo('Vérification de ton email en cours...');
+
+      fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: verify }),
+      })
+        .then(async (res) => {
+          const contentType = res.headers.get('content-type') || '';
+          const data = contentType.includes('application/json')
+            ? await res.json().catch(() => ({}))
+            : {};
+
+          if (!res.ok) {
+            throw new Error(data.message || 'Vérification email impossible.');
+          }
+
+          setInfo(data.message || 'Email vérifié. Tu peux te connecter.');
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.delete('verifyToken');
+          window.history.replaceState({}, '', nextUrl.toString());
+        })
+        .catch((err) => {
+          setError(err.message || 'Vérification email impossible.');
+          setInfo('');
+        });
+    }
+  }, []);
+
+  const requestPasswordReset = async () => {
+    setError('');
+    setInfo('');
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail) {
+        throw new Error('Saisis ton email avant de demander la réinitialisation.');
+      }
+
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Impossible d\'envoyer le lien de réinitialisation.');
+      }
+
+      setInfo(data.message || 'Lien de réinitialisation envoyé.');
+      if (data.devResetToken) {
+        setResetToken(data.devResetToken);
+        setInfo('Mode dev: token reçu. Tu peux réinitialiser directement ci-dessous.');
+      }
+    } catch (err) {
+      setError(err.message || 'Erreur lors de la demande de réinitialisation.');
+    }
+  };
+
+  const submitPasswordReset = async () => {
+    setError('');
+    setInfo('');
+    try {
+      if (!resetToken) {
+        throw new Error('Token de réinitialisation manquant.');
+      }
+      if (resetPwd.length < 6) {
+        throw new Error('Le nouveau mot de passe doit contenir au moins 6 caractères.');
+      }
+
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, newPassword: resetPwd }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Réinitialisation impossible.');
+      }
+
+      setResetPwd('');
+      setResetToken('');
+      setInfo('Mot de passe réinitialisé. Tu peux te connecter maintenant.');
+      navigate('/login', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Erreur lors de la réinitialisation.');
+    }
+  };
+
+  const requestVerificationResend = async () => {
+    setError('');
+    setInfo('');
+    try {
+      const targetEmail = pendingVerificationEmail || email.trim().toLowerCase();
+      if (!targetEmail) {
+        throw new Error('Saisis ton email pour recevoir un nouveau lien de vérification.');
+      }
+
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Impossible d\'envoyer un nouveau lien de vérification.');
+      }
+
+      setInfo(data.message || 'Nouveau lien de vérification envoyé.');
+      if (data.devVerifyToken) {
+        setInfo(`Mode dev: nouveau token reçu. Ouvre /login?verifyToken=${data.devVerifyToken}`);
+      }
+    } catch (err) {
+      setError(err.message || 'Erreur lors de l\'envoi du lien de vérification.');
+    }
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     setError('');
+    setInfo('');
 
     try {
       // credentialResponse.credential houwa dak s-sarout (token) li 3tatna Google!
@@ -33,7 +183,14 @@ export default function Login() {
         body: JSON.stringify({ token: credentialResponse.credential }) 
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Échec de connexion Google.');
+      }
 
       if (data.success) {
         localStorage.setItem('sc_token', data.token);
@@ -45,11 +202,11 @@ export default function Login() {
           navigate('/profil');
         }
       } else {
-        setError(data.message || 'Mochkil f Google Login');
+        setError(data.message || 'Connexion Google impossible.');
       }
     } catch (err) {
       console.error('Erreur Backend:', err);
-      setError('Serveur tafi awla mochkil f l-connexion.');
+      setError(err.message || 'Serveur indisponible ou problème réseau.');
     } finally {
       setLoading(false);
     }
@@ -57,28 +214,62 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    setInfo('');
     try {
       const endpoint = mode === 'register' ? '/auth/register' : '/auth/login';
       const body     = mode === 'register'
         ? { name, email, password }
         : { email, password };
 
+      if (mode === 'register' && !name.trim()) {
+        throw new Error('Le prénom est requis.');
+      }
+      if (!email.trim()) {
+        throw new Error('Adresse email requise.');
+      }
+      if (password.length < 6) {
+        throw new Error('Le mot de passe doit contenir au moins 6 caractères.');
+      }
+
       const res  = await fetch('/api' + endpoint, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
       });
-      const data = await res.json();
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        if (res.status === 403 && data.message && data.message.toLowerCase().includes('non vérifié')) {
+          setPendingVerificationEmail((email || '').trim().toLowerCase());
+        }
+        throw new Error(data.message || `Erreur serveur (${res.status}).`);
+      }
 
       if (!data.success) throw new Error(data.message || 'Erreur');
+      if (mode === 'register') {
+        if (data.requiresEmailVerification) {
+          setPendingVerificationEmail(email.trim().toLowerCase());
+          setInfo(data.message || 'Compte créé. Vérifie ton email pour activer l\'accès.');
+          if (data.devVerifyToken) {
+            setInfo(`Mode dev: token de vérification reçu. Ouvre /login?verifyToken=${data.devVerifyToken}`);
+          }
+          setMode('login');
+          setPassword('');
+          return;
+        }
+      }
 
       // Sauvegarde token + user
       localStorage.setItem('sc_token', data.token);
       localStorage.setItem('sc_user',  JSON.stringify(data.user));
 
       // Routing intelligent:
-      // - Inscription     → toujours /profil (setup initial)
-      // - Connexion       → /feed si profil complet, sinon /profil
+      // - Connexion / inscription vérifiée → /feed si profil complet, sinon /profil
       if (mode === 'register') {
         navigate('/profil');
       } else {
@@ -323,7 +514,37 @@ export default function Login() {
 
               {mode === 'login' && (
                 <div style={{ textAlign:'right', marginTop:'-4px' }}>
-                  <span style={{ fontSize:'0.82rem', color:'#ea580c', cursor:'pointer', fontWeight:'600' }}>Mot de passe oublié ?</span>
+                  <button type="button" onClick={requestPasswordReset} style={{ fontSize:'0.82rem', color:'#ea580c', cursor:'pointer', fontWeight:'600', border:'none', background:'transparent', padding:0, fontFamily:'inherit' }}>
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+              )}
+
+              {mode === 'login' && pendingVerificationEmail && (
+                <div style={{ textAlign:'right', marginTop:'-8px' }}>
+                  <button
+                    type="button"
+                    onClick={requestVerificationResend}
+                    style={{ fontSize:'0.8rem', color:'#1d4ed8', cursor:'pointer', fontWeight:'700', border:'none', background:'transparent', padding:0, fontFamily:'inherit' }}
+                  >
+                    Renvoyer l'email de vérification
+                  </button>
+                </div>
+              )}
+
+              {resetToken && (
+                <div style={{ background:'#fff7ed', border:'1px solid #fdba74', borderRadius:'10px', padding:'10px', display:'grid', gap:'8px' }}>
+                  <input
+                    type="password"
+                    className="sc-placeholder"
+                    placeholder="Nouveau mot de passe"
+                    value={resetPwd}
+                    onChange={e => setResetPwd(e.target.value)}
+                    style={{ ...inputStyle('resetPwd'), paddingRight:'14px' }}
+                  />
+                  <button type="button" className="sc-btn" onClick={submitPasswordReset} style={{ width:'100%', padding:'10px', borderRadius:'10px', background:'linear-gradient(135deg,#ea580c 0%,#f97316 100%)', color:'white', fontWeight:'800', fontSize:'0.86rem', border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                    Réinitialiser le mot de passe
+                  </button>
                 </div>
               )}
 
@@ -331,6 +552,13 @@ export default function Login() {
                 <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'10px', padding:'10px 14px', fontSize:'0.84rem', color:'#dc2626', fontWeight:'600', display:'flex', alignItems:'center', gap:'8px' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   {error}
+                </div>
+              )}
+
+              {info && (
+                <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:'10px', padding:'10px 14px', fontSize:'0.84rem', color:'#1d4ed8', fontWeight:'600', display:'flex', alignItems:'center', gap:'8px' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  {info}
                 </div>
               )}
 
@@ -348,7 +576,7 @@ export default function Login() {
                     {[0,1,2].map(i => (
                       <span key={i} style={{ width:'6px', height:'6px', borderRadius:'50%', background:'white', animation:`dot 1.2s ease-in-out ${i*0.16}s infinite`, display:'inline-block' }} />
                     ))}
-                    <span>Connexion...</span>
+                    <span>{mode === 'login' ? 'Connexion...' : 'Création...'}</span>
                   </>
                 ) : (
                   mode === 'login' ? 'Se connecter →' : 'Créer mon compte →'

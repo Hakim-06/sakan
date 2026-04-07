@@ -30,6 +30,8 @@ const I = {
   chat:    (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>,
   send:    (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
   plus:    (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  filter:  (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor"/></svg>,
+  bot:     (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="18" height="13" rx="4"/><path d="M12 3v4"/><circle cx="8.5" cy="13" r="1" fill="currentColor"/><circle cx="15.5" cy="13" r="1" fill="currentColor"/><path d="M9 17h6"/></svg>,
   edit:    (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   trash:   (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
   x:       (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
@@ -120,92 +122,6 @@ const ImageUploadZone = ({ images, onAdd, onRemove, maxImages=6, darkMode }) => 
     if (remaining <= 0) return;
     onAdd(Array.from(files).slice(0, remaining).map(f => URL.createObjectURL(f)));
   }, [images.length, maxImages, onAdd]);
-const handlePublishAd = async () => {
-  // 1. Validation sghira (T2eked bli l-mdina w l-budget 3amrin)
-  if (!newAdData.city || !newAdData.budget) {
-    return alert("🚨 L-mdina w l-budget darouriyin!");
-  }
-
-  // 2. N-jibou l-token mn localStorage
-  const token = localStorage.getItem('sc_token'); // T2eked mn smit l-token li k-t-khdem biha
-  if (!token) return alert("🚨 Khassk t-koun m-connecté bach t-publiyi annonce!");
-
-  try {
-    let uploadedPhotos = [];
-
-    // ==========================================
-    // ETAPE 1 : UPLOAD DYAL T-TSAWER L-CLOUDINARY
-    // ==========================================
-    // K-n-vériiyiw wach l-user 3zel chi tsawer
-    if (newAdData.images && newAdData.images.length > 0) {
-      const formData = new FormData();
-      
-      newAdData.images.forEach(img => {
-        // 'img' khasso y-koun objet dyal Fichier (File)
-        formData.append('photos', img);
-      });
-
-      const uploadRes = await fetch('http://localhost:5000/api/upload/annonce', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${sc_token}` },
-        body: formData // Ma k-n-diroch Content-Type m3a FormData
-      });
-
-      const uploadData = await uploadRes.json();
-      
-      if (uploadData.success) {
-        uploadedPhotos = uploadData.photos; // Hado fihom {url, public_id} li jaw mn Backend
-      } else {
-        return alert("❌ Mouchkil f upload d-tsawer: " + uploadData.message);
-      }
-    }
-
-    // ==========================================
-    // ETAPE 2 : CRÉATION AWLA MODIFICATION D L-ANNONCE
-    // ==========================================
-    const payload = {
-      city: newAdData.city,
-      budget: newAdData.budget,
-      description: newAdData.description,
-      amenities: newAdData.amenities,
-      photos: uploadedPhotos // Liens jdad li jaw mn Cloudinary
-    };
-
-    // N-choufou wach k-n-creyiw wla k-n-modifiw (Hit 3ndk editingAdId f l-koud)
-    const url = editingAdId 
-      ? `http://localhost:5000/api/annonces/${editingAdId}` 
-      : 'http://localhost:5000/api/annonces';
-    const method = editingAdId ? 'PUT' : 'POST';
-
-    const annonceRes = await fetch(url, {
-      method: method,
-      headers: {
-  'Authorization': `Bearer ${localStorage.getItem('sc_token')}`, // T2eked mn smit l-token
-  'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const finalData = await annonceRes.json();
-
-    if (finalData.success) {
-      alert(editingAdId ? "✅ Annonce t-modifat mzyan!" : "✅ Annonce t-kreyat mzyan!");
-      
-      // Hna k-n-seddou l-modal w n-videw l-formulaire
-      closeCreateAd(); 
-      setNewAdData({ city: '', budget: '', description: '', amenities: [], images: [] });
-      
-      // Khassk t-3ayet hna l-fonction li k-t-dir Refresh l-Feed (b7al fetchAnnonces()) bach t-ban l-annonce jdida
-      
-    } else {
-      alert("❌ Erreur: " + finalData.message);
-    }
-
-  } catch (error) {
-    console.error("❌ Mouchkil f handlePublishAd:", error);
-    alert("❌ Mouchkil f réseau awla serveur.");
-  }
-};
   return (
     <div style={{ marginBottom:'22px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
@@ -313,6 +229,9 @@ const AnnonceCard = ({ profile, onSelect, onContact, isFavorite, onToggleFavorit
   const surface = darkMode?'#1e293b':'white';
   const borderColor = darkMode?'#334155':'#f1f5f9';
   const borderStrong = darkMode?'#334155':'#e2e8f0';
+  const budgetNum = Number(profile.budget) || 0;
+  const formattedBudget = new Intl.NumberFormat('fr-MA').format(budgetNum);
+  const subtitle = profile.bio || profile.description || 'Annonce etudiant bien situee, propre et pratique pour les cours.';
 
   return (
     <div
@@ -363,7 +282,7 @@ const AnnonceCard = ({ profile, onSelect, onContact, isFavorite, onToggleFavorit
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'3px' }}>
               <I.pin width="13" height="13" style={{ color:'#ea580c', flexShrink:0 }} />
-              <h3 style={{ margin:0, fontSize:'1rem', fontWeight:'800', color:text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile.city}</h3>
+              <h3 style={{ margin:0, fontSize:'1rem', fontWeight:'900', color:text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', letterSpacing:'-0.2px' }}>{profile.city}</h3>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:'4px', paddingLeft:'18px' }}>
               <I.school width="11" height="11" style={{ color:textMuted, flexShrink:0 }} />
@@ -375,6 +294,20 @@ const AnnonceCard = ({ profile, onSelect, onContact, isFavorite, onToggleFavorit
             <span className={`online-dot ${profile.isOnline?'online':''}`} />
           </div>
         </div>
+
+        <p style={{
+          margin:'0 0 12px',
+          color:textMuted,
+          fontSize:'0.78rem',
+          lineHeight:1.5,
+          display:'-webkit-box',
+          WebkitLineClamp:2,
+          WebkitBoxOrient:'vertical',
+          overflow:'hidden',
+          minHeight:'2.2em'
+        }}>
+          {subtitle}
+        </p>
 
         {/* AMENITIES MINI */}
         {profile.amenities?.length > 0 && (
@@ -393,10 +326,15 @@ const AnnonceCard = ({ profile, onSelect, onContact, isFavorite, onToggleFavorit
           </div>
         )}
 
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:`1px solid ${borderColor}`, paddingTop:'13px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:`1px solid ${borderColor}`, paddingTop:'13px', gap:'10px' }}>
           <div>
-            <span style={{ fontWeight:'900', fontSize:'1.1rem', color:text }}>{profile.budget}</span>
-            <span style={{ fontWeight:'500', fontSize:'0.76rem', color:textMuted }}> DH/mois</span>
+            <div style={{ display:'flex', alignItems:'baseline', gap:'5px' }}>
+              <span style={{ fontWeight:'900', fontSize:'1.18rem', color:text, letterSpacing:'-0.2px' }}>{formattedBudget}</span>
+              <span style={{ fontWeight:'700', fontSize:'0.72rem', color:'#ea580c', background:darkMode?'rgba(234,88,12,0.18)':'#fff7ed', padding:'2px 8px', borderRadius:'999px' }}>DH/mois</span>
+            </div>
+            <p style={{ margin:'4px 0 0', fontSize:'0.7rem', color:textMuted, fontWeight:'600' }}>
+              {profile.isMine ? 'Votre annonce active' : 'Disponible maintenant'}
+            </p>
           </div>
           {!profile.isMine
             ? <button className="contact-btn" onClick={e => { e.stopPropagation(); onContact(profile); }}>
@@ -447,6 +385,11 @@ export default function Feed() {
   const [darkMode, setDarkMode] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [searchCity, setSearchCity] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [draftPriceMin, setDraftPriceMin] = useState('');
+  const [draftPriceMax, setDraftPriceMax] = useState('');
+  const [isPriceFiltersOpen, setIsPriceFiltersOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const searchRef = useRef(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -454,6 +397,17 @@ export default function Feed() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('compte');
   const [toggles, setToggles] = useState({ hidePhone:false, onlineStatus:true, emailAlerts:true });
+  const [settingsForm, setSettingsForm] = useState({
+    email: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    verifyToken: '',
+  });
+  const [settingsCurrentEmail, setSettingsCurrentEmail] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [isSettingsSaving, setIsSettingsSaving] = useState(false);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isMyProfileOpen, setIsMyProfileOpen] = useState(false);
   const [myProfile, setMyProfile] = useState({
     name:"Oussama", age:21, ecole:"ENCG Settat", city:"Settat",
@@ -464,17 +418,51 @@ export default function Feed() {
   });
   const [editProfile, setEditProfile] = useState(null);
   const [annonces, setAnnonces] = useState([]);
+  const [myUserId, setMyUserId] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [matchingThreshold, setMatchingThreshold] = useState(70);
+  const [contactForm, setContactForm] = useState(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('sc_user') || '{}');
+      return {
+        name: user.name || '',
+        email: user.email || '',
+        subject: '',
+        message: '',
+      };
+    } catch (_) {
+      return { name: '', email: '', subject: '', message: '' };
+    }
+  });
+  const [isContactSending, setIsContactSending] = useState(false);
     
   const [isCreateAdOpen, setIsCreateAdOpen] = useState(false);
   const [newAdData, setNewAdData] = useState({ city:'', budget:'', description:'', images:[], amenities:[] });
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [aiIsTyping, setAiIsTyping] = useState(false);
+  const [aiRuntimeMode, setAiRuntimeMode] = useState('local');
+  const [isAiCompactMobile, setIsAiCompactMobile] = useState(window.innerWidth < 700);
+  const [aiMessages, setAiMessages] = useState([
+    {
+      id: 1,
+      role: 'assistant',
+      text: 'Bonjour, je suis Sakan AI. Je peux t\'aider pour les prix, les villes, le matching et les filtres.',
+      at: Date.now(),
+    },
+  ]);
   const [activeConvId, setActiveConvId] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const messagesEndRef = useRef(null);
-  const [conversations, setConversations] = useState([
-    { id:1, userId:1, name:'Anas', lastMessage:"L'appart est toujours dispo ?", time:'10:30', unread:2, image:'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80', isOnline:true, messages:[{text:"Salut, ton annonce m'intéresse !",sender:'them',time:'10:28'},{text:"Salut ! Super, tu cherches pour quand ?",sender:'me',time:'10:32'}] },
-    { id:2, userId:2, name:'Salma', lastMessage:'Super, on se voit demain.', time:'Hier', unread:1, image:'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80', isOnline:false, messages:[{text:"L'appartement est à 5min de la fac",sender:'them',time:'14:20'},{text:"Super, on se voit demain.",sender:'them',time:'14:22'}] }
-  ]);
+  const aiPanelRef = useRef(null);
+  const aiMessagesEndRef = useRef(null);
+  const [conversations, setConversations] = useState([]);
 
   // ── THEME VARS ──
   const bg = darkMode?'#0b1120':'#f8fafc';
@@ -498,23 +486,777 @@ export default function Feed() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2800);
   };
 
+  const sanitizeBudgetFilterInput = (value) => value.replace(/\D/g, '').slice(0, 6);
+  const openPriceFilters = () => {
+    setDraftPriceMin(priceMin);
+    setDraftPriceMax(priceMax);
+    setIsPriceFiltersOpen(true);
+  };
+  const applyPriceFilters = () => {
+    const parsedMin = draftPriceMin ? Number(draftPriceMin) : '';
+    const parsedMax = draftPriceMax ? Number(draftPriceMax) : '';
+
+    if (parsedMin !== '' && parsedMax !== '' && parsedMin > parsedMax) {
+      setPriceMin(String(parsedMax));
+      setPriceMax(String(parsedMin));
+    } else {
+      setPriceMin(draftPriceMin);
+      setPriceMax(draftPriceMax);
+    }
+
+    setIsPriceFiltersOpen(false);
+  };
+
+  const toTimeLabel = (input) => {
+    if (!input) return '';
+    const d = new Date(input);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  };
+
+  const isCurrentlyOnline = (isOnline, lastSeen) => {
+    if (!isOnline) return false;
+    if (!lastSeen) return !!isOnline;
+    const diff = Date.now() - new Date(lastSeen).getTime();
+    return diff <= 2 * 60 * 1000;
+  };
+
+  const formatLastSeen = (lastSeen) => {
+    if (!lastSeen) return 'Hors ligne';
+    const diffMs = Date.now() - new Date(lastSeen).getTime();
+    const mins = Math.floor(diffMs / (1000 * 60));
+    if (mins < 1) return 'Vu a l\'instant';
+    if (mins < 60) return `Vu il y a ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `Vu il y a ${hours} h`;
+    return 'Hors ligne';
+  };
+
+  const submitContactFromFeed = async (e) => {
+    e.preventDefault();
+    if (isContactSending) return;
+
+    const name = (contactForm.name || '').trim();
+    const email = (contactForm.email || '').trim();
+    const subject = (contactForm.subject || '').trim();
+    const message = (contactForm.message || '').trim();
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+
+    if (!name || !email || !subject || !message) {
+      showToast('Tous les champs Contact sont requis.', 'error');
+      return;
+    }
+    if (!validEmail) {
+      showToast('Adresse email invalide.', 'error');
+      return;
+    }
+    if (subject.length < 3 || message.length < 10) {
+      showToast('Sujet ou message trop court.', 'error');
+      return;
+    }
+
+    setIsContactSending(true);
+    try {
+      const token = localStorage.getItem('sc_token');
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+        },
+        body: JSON.stringify({ name, email, subject, message }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Impossible d\'envoyer ton message.');
+      }
+
+      setContactForm((prev) => ({
+        ...prev,
+        subject: '',
+        message: '',
+      }));
+      showToast(data.message || 'Message envoye avec succes.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Erreur serveur Contact.', 'error');
+    } finally {
+      setIsContactSending(false);
+    }
+  };
+
+  const buildAiReply = (questionRaw) => {
+    const q = (questionRaw || '').toLowerCase();
+    const isDarijaStyle = /[\u0600-\u06FF]/.test(questionRaw || '') || /(chno|bghit|kifach|wach|mzyan|fin|3la|bzaf|safi|kayn)/.test(q);
+    const pool = filteredToutes.length > 0 ? filteredToutes : annonces;
+    const budgets = pool.map(a => Number(a.budget) || 0).filter(Boolean);
+    const cityCounts = {};
+    pool.forEach(a => {
+      const key = a.city || 'Inconnue';
+      cityCounts[key] = (cityCounts[key] || 0) + 1;
+    });
+    const topCities = Object.entries(cityCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([city, count]) => `${city} (${count})`)
+      .join(', ');
+
+    if (q.includes('prix') || q.includes('budget')) {
+      if (!budgets.length) {
+        return isDarijaStyle
+          ? 'Ma kaynash data kافية 3la lbudget daba. 7yed filters w 3awed jarrab.'
+          : 'Aucun budget disponible pour le moment. Essaie de supprimer les filtres puis de rafraîchir.';
+      }
+      const min = Math.min(...budgets);
+      const max = Math.max(...budgets);
+      const avg = Math.round(budgets.reduce((a, b) => a + b, 0) / budgets.length);
+      return isDarijaStyle
+        ? `Daba f had results: min ${min} DH, moyenne ${avg} DH, max ${max} DH. Ila bghiti n9ترح 3ليك range mzyan.`
+        : `Dans les résultats actuels: min ${min} DH, moyenne ${avg} DH, max ${max} DH. Si tu veux, je peux te proposer une fourchette adaptée.`;
+    }
+
+    if (q.includes('ville') || q.includes('madina') || q.includes('city')) {
+      return topCities
+        ? (isDarijaStyle
+          ? `Lmdin li kaynin bzf daba: ${topCities}.`
+          : `Les villes les plus présentes actuellement: ${topCities}.`)
+        : (isDarijaStyle
+          ? 'Mazal ma kaynach data kافية باش n7sb lmdin lra2isiya.'
+          : 'Pas encore assez de données pour calculer les villes principales.');
+    }
+
+    if (q.includes('matching') || q.includes('compat')) {
+      return isDarijaStyle
+        ? `Seuil dyalk daba هو ${matchingThreshold}%. Kaynin ${filteredMatching.length} annonces compatibles.`
+        : `Ton seuil de matching actuel est de ${matchingThreshold}%. Il y a ${filteredMatching.length} annonces compatibles.`;
+    }
+
+    if (q.includes('filtre') || q.includes('filter')) {
+      const city = searchCity || 'toutes';
+      const min = priceMin || '0';
+      const max = priceMax || '∞';
+      return isDarijaStyle
+        ? `Filters active: ville=${city}, prix=${min}-${max} DH. N9dar n3tik suggestions mzyanin 3la had setup.`
+        : `Filtres actifs: ville=${city}, prix=${min}-${max} DH. Je peux te proposer des recommandations avec cette configuration.`;
+    }
+
+    if (q.includes('conseil') || q.includes('suggest')) {
+      return isDarijaStyle
+        ? 'Nصيحة سريعة: bda b prix max ma39oul (b7al 1800), khlli lmdina mftou7a, w hdf lmatching fo9 70%.'
+        : 'Conseil rapide: commence avec un prix max raisonnable (ex: 1800), garde la ville ouverte, puis vise un matching > 70% pour de meilleurs résultats.';
+    }
+
+    return isDarijaStyle
+      ? `Daba 3ndk ${filteredToutes.length} annonces f onglet "Toutes". Sowlni 3la prix, villes, matching ola filters.`
+      : `Tu as actuellement ${filteredToutes.length} annonces visibles dans l'onglet "Toutes". Pose-moi une question sur les prix, les villes, le matching ou les filtres.`;
+  };
+
+  const askAiBackend = async (question) => {
+    const token = localStorage.getItem('sc_token');
+    if (!token) {
+      throw new Error('NO_TOKEN');
+    }
+
+    const pool = filteredToutes.length > 0 ? filteredToutes : annonces;
+    const visiblePool = pool.filter((a) => !a.isMine);
+    const cityCounts = {};
+    visiblePool.forEach((a) => {
+      const key = a.city || 'Inconnue';
+      cityCounts[key] = (cityCounts[key] || 0) + 1;
+    });
+    const topCities = Object.entries(cityCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([city]) => city);
+
+    const prices = visiblePool
+      .map((a) => Number(a.budget) || 0)
+      .filter((v) => v > 0);
+    const priceSummary = prices.length
+      ? {
+          min: Math.min(...prices),
+          max: Math.max(...prices),
+          avg: Math.round(prices.reduce((s, v) => s + v, 0) / prices.length),
+        }
+      : { min: null, max: null, avg: null };
+
+    const listingsSample = visiblePool.slice(0, 12).map((a) => ({
+      city: a.city || '',
+      budget: Number(a.budget) || 0,
+      ecole: a.ecole || '',
+      matchScore: Number(a.matchScore) || 0,
+      amenities: Array.isArray(a.amenities) ? a.amenities.slice(0, 3) : [],
+    }));
+
+    const requestPromise = fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        message: question,
+        context: {
+          city: searchCity || '',
+          priceMin,
+          priceMax,
+          matchingThreshold,
+          visibleCount: visiblePool.length,
+          topCities,
+          priceSummary,
+          listingsSample,
+          userProfile: {
+            city: myProfile?.city || '',
+            budget: Number(myProfile?.budget) || 0,
+            traits: Array.isArray(myProfile?.traits) ? myProfile.traits.slice(0, 6) : [],
+          },
+        },
+      }),
+    });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('AI_TIMEOUT')), 7000);
+    });
+
+    const res = await Promise.race([requestPromise, timeoutPromise]);
+
+    const contentType = res.headers.get('content-type') || '';
+    let data = {};
+
+    if (contentType.includes('application/json')) {
+      data = await res.json().catch(() => ({}));
+    } else {
+      const textBody = await res.text().catch(() => '');
+      data = { message: textBody };
+    }
+
+    if (!res.ok) {
+      const msg = data?.message || `Server error: ${res.status}`;
+      throw new Error(msg);
+    }
+
+    if (!data?.success || !data?.answer) {
+      throw new Error(data?.message || 'Reponse IA invalide');
+    }
+
+    return data.answer;
+  };
+
+  const handleAiSend = async (forcedText) => {
+    const textToSend = (forcedText ?? aiInput).trim();
+    if (!textToSend || aiIsTyping) return;
+
+    const userMsg = {
+      id: Date.now() + Math.random(),
+      role: 'user',
+      text: textToSend,
+      at: Date.now(),
+    };
+
+    setAiMessages(prev => [...prev, userMsg]);
+    setAiInput('');
+    setAiIsTyping(true);
+
+    try {
+      const answer = await askAiBackend(textToSend);
+      setAiRuntimeMode('backend');
+      const assistantMsg = {
+        id: Date.now() + Math.random(),
+        role: 'assistant',
+        text: answer,
+        at: Date.now(),
+      };
+      setAiMessages(prev => [...prev, assistantMsg]);
+    } catch (err) {
+      setAiRuntimeMode('local');
+      const assistantMsg = {
+        id: Date.now() + Math.random(),
+        role: 'assistant',
+        text: buildAiReply(textToSend),
+        at: Date.now(),
+      };
+      setAiMessages(prev => [...prev, assistantMsg]);
+    } finally {
+      setAiIsTyping(false);
+    }
+  };
+
+  const mapConversationFromApi = (conv) => {
+    const userId = String(conv?.user?._id || '');
+    return {
+      id: userId,
+      userId,
+      name: conv?.user?.name || 'Utilisateur',
+      image: conv?.user?.photo?.url || conv?.user?.photo || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+      isOnline: isCurrentlyOnline(!!conv?.user?.isOnline, conv?.user?.lastSeen),
+      lastSeen: conv?.user?.lastSeen || null,
+      unread: conv?.unreadCount || 0,
+      lastMessage: conv?.lastMessage?.text || '',
+      time: toTimeLabel(conv?.lastMessage?.createdAt),
+      messages: [],
+    };
+  };
+
+  const mapMessagesFromApi = (items = []) => {
+    return items.map((msg) => {
+      const senderId = String(msg?.sender?._id || msg?.sender || '');
+      return {
+        id: msg?._id,
+        text: msg?.text || '',
+        imageUrl: msg?.imageUrl || null,
+        sender: senderId === String(myUserId) ? 'me' : 'them',
+        time: toTimeLabel(msg?.createdAt),
+        isRead: !!msg?.isRead,
+        readAt: msg?.readAt || null,
+      };
+    });
+  };
+
+  const loadSettingsData = useCallback(async () => {
+    try {
+      setIsSettingsLoading(true);
+      const token = localStorage.getItem('sc_token');
+      if (!token) return;
+
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success || !data.user) return;
+
+      const preferences = data.user.preferences || {};
+      setSettingsCurrentEmail(data.user.email || '');
+      setPendingEmail(data.user.pendingEmail || '');
+      setSettingsForm((prev) => ({
+        ...prev,
+        email: data.user.email || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        verifyToken: '',
+      }));
+
+      setToggles({
+        hidePhone: !!preferences.hidePhone,
+        onlineStatus: preferences.onlineStatus !== false,
+        emailAlerts: preferences.emailAlerts !== false,
+      });
+
+      if (typeof preferences.darkMode === 'boolean') {
+        setDarkMode(preferences.darkMode);
+      }
+    } catch (_) {
+      showToast('Impossible de charger les paramètres.', 'error');
+    } finally {
+      setIsSettingsLoading(false);
+    }
+  }, []);
+
+  const openSettingsModal = () => {
+    setSettingsTab('compte');
+    setIsSettingsOpen(true);
+    loadSettingsData();
+  };
+
+  const saveSettings = async () => {
+    try {
+      const token = localStorage.getItem('sc_token');
+      if (!token) {
+        showToast('Session expirée. Reconnecte-toi.', 'error');
+        return;
+      }
+
+      const nextEmail = settingsForm.email.trim().toLowerCase();
+      const wantsEmailChange = !!nextEmail && nextEmail !== settingsCurrentEmail;
+      const wantsPasswordChange = !!(settingsForm.currentPassword || settingsForm.newPassword || settingsForm.confirmPassword);
+
+      if (!nextEmail) {
+        showToast('Adresse email requise.', 'error');
+        return;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(nextEmail)) {
+        showToast('Adresse email invalide.', 'error');
+        return;
+      }
+
+      if (wantsPasswordChange) {
+        if (!settingsForm.currentPassword || !settingsForm.newPassword || !settingsForm.confirmPassword) {
+          showToast('Remplis tous les champs de mot de passe.', 'error');
+          return;
+        }
+        if (settingsForm.newPassword.length < 6) {
+          showToast('Le nouveau mot de passe doit faire au moins 6 caractères.', 'error');
+          return;
+        }
+        if (settingsForm.newPassword !== settingsForm.confirmPassword) {
+          showToast('La confirmation du mot de passe ne correspond pas.', 'error');
+          return;
+        }
+      }
+
+      if (wantsEmailChange && !settingsForm.currentPassword) {
+        showToast('Mot de passe actuel requis pour changer l\'email.', 'error');
+        return;
+      }
+
+      setIsSettingsSaving(true);
+
+      const prefRes = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          preferences: {
+            hidePhone: !!toggles.hidePhone,
+            onlineStatus: !!toggles.onlineStatus,
+            emailAlerts: !!toggles.emailAlerts,
+            darkMode: !!darkMode,
+          },
+        }),
+      });
+      const prefData = await prefRes.json().catch(() => ({}));
+      if (!prefRes.ok || !prefData.success) {
+        throw new Error(prefData.message || 'Échec enregistrement des préférences.');
+      }
+
+      if (wantsPasswordChange) {
+        const passRes = await fetch('/api/users/password', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            currentPassword: settingsForm.currentPassword,
+            newPassword: settingsForm.newPassword,
+          }),
+        });
+        const passData = await passRes.json().catch(() => ({}));
+        if (!passRes.ok || !passData.success) {
+          throw new Error(passData.message || 'Échec de mise à jour du mot de passe.');
+        }
+      }
+
+      if (wantsEmailChange) {
+        const emailRes = await fetch('/api/users/email-change/request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            newEmail: nextEmail,
+            currentPassword: settingsForm.currentPassword,
+          }),
+        });
+        const emailData = await emailRes.json().catch(() => ({}));
+        if (!emailRes.ok || !emailData.success) {
+          throw new Error(emailData.message || 'Échec de la demande de changement d\'email.');
+        }
+
+        setPendingEmail(emailData.pendingEmail || nextEmail);
+        if (emailData.devVerificationToken) {
+          setSettingsForm((prev) => ({ ...prev, verifyToken: emailData.devVerificationToken }));
+          showToast('Token de vérification dev généré.', 'info');
+        }
+      }
+
+      setSettingsForm((prev) => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
+
+      showToast(wantsEmailChange ? 'Paramètres enregistrés. Vérifie ton nouvel email.' : 'Paramètres sauvegardés.');
+    } catch (err) {
+      showToast(err.message || 'Erreur lors de la sauvegarde.', 'error');
+    } finally {
+      setIsSettingsSaving(false);
+    }
+  };
+
+  const verifyPendingEmail = async () => {
+    try {
+      const tokenValue = settingsForm.verifyToken.trim();
+      if (!tokenValue) {
+        showToast('Entre le token de vérification.', 'error');
+        return;
+      }
+
+      setIsSettingsSaving(true);
+      const res = await fetch('/api/users/email-change/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: tokenValue }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Token invalide ou expiré.');
+      }
+
+      const updatedEmail = data.email || pendingEmail;
+      setSettingsCurrentEmail(updatedEmail);
+      setPendingEmail('');
+      setSettingsForm((prev) => ({ ...prev, email: updatedEmail, verifyToken: '' }));
+      showToast('Email vérifié et mis à jour.');
+    } catch (err) {
+      showToast(err.message || 'Impossible de vérifier le token.', 'error');
+    } finally {
+      setIsSettingsSaving(false);
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('Image trop grande (max 8 MB)', 'error');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Selecte une image valide', 'error');
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setPreviewImage(evt.target?.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('sc_token');
+      if (!token) return;
+
+      const res = await fetch('/api/messages/conversations', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) return;
+
+      const mapped = (data.conversations || []).map(mapConversationFromApi);
+      setConversations((prev) => {
+        const oldById = new Map(prev.map(c => [String(c.userId), c]));
+        const mappedWithCache = mapped.map(c => ({
+          ...c,
+          messages: oldById.get(String(c.userId))?.messages || [],
+        }));
+
+        // Keep locally-created conversations (no messages yet) so the drawer
+        // does not lose the selected contact before the first message is sent.
+        const existingIds = new Set(mappedWithCache.map(c => String(c.userId)));
+        const pendingLocal = prev.filter(c => !existingIds.has(String(c.userId)));
+
+        return [...mappedWithCache, ...pendingLocal];
+      });
+    } catch (_) {}
+  }, []);
+
+  const loadMessagesWithUser = useCallback(async (userId, refreshList = true) => {
+    try {
+      const token = localStorage.getItem('sc_token');
+      if (!token || !userId) return;
+
+      const res = await fetch(`/api/messages/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) return;
+
+      const mappedMessages = mapMessagesFromApi(data.messages || []);
+      setConversations(prev => {
+        let found = false;
+        const updated = prev.map(c => {
+          if (String(c.userId) === String(userId)) {
+            found = true;
+            return {
+              ...c,
+              messages: mappedMessages,
+              unread: 0,
+              lastMessage: mappedMessages[mappedMessages.length - 1]?.text || c.lastMessage,
+              time: mappedMessages[mappedMessages.length - 1]?.time || c.time,
+            };
+          }
+          return c;
+        });
+
+        if (found) return updated;
+
+        return [{
+          id: String(userId),
+          userId: String(userId),
+          name: 'Utilisateur',
+          image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+          isOnline: false,
+          lastSeen: null,
+          unread: 0,
+          lastMessage: mappedMessages[mappedMessages.length - 1]?.text || '',
+          time: mappedMessages[mappedMessages.length - 1]?.time || '',
+          messages: mappedMessages,
+        }, ...updated];
+      });
+
+      if (refreshList) {
+        await fetchConversations();
+        await fetchUnreadCount();
+      }
+    } catch (_) {}
+  }, [fetchConversations, myUserId]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('sc_token');
+      if (!token) return;
+
+      const res = await fetch('/api/messages/unread/count', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) return;
+
+      setUnreadCount(Number(data.count || 0));
+    } catch (_) {}
+  }, []);
+
+  const normalizeAnnonce = (a, opts = {}) => {
+    const ownerObj = a?.owner && typeof a.owner === 'object' ? a.owner : {};
+    const ownerId = ownerObj?._id || a?.owner || a?.ownerId || null;
+    const id = a?._id || a?.id;
+    const rawPhotos = Array.isArray(a?.photos) ? a.photos : Array.isArray(a?.apartmentImages) ? a.apartmentImages : [];
+    const apartmentImages = rawPhotos
+      .map(p => (typeof p === 'string' ? p : p?.url))
+      .filter(Boolean);
+
+    const computedMine = opts.forceMine !== undefined
+      ? opts.forceMine
+      : (myUserId && ownerId ? String(ownerId) === String(myUserId) : !!a?.isMine);
+
+    return {
+      id,
+      ownerId,
+      userId: ownerId,
+      name: ownerObj?.name || a?.name || myProfile.name || 'Inconnu',
+      age: ownerObj?.age ?? a?.age ?? myProfile.age,
+      ecole: ownerObj?.ecole || a?.ecole || myProfile.ecole || '',
+      city: a?.city || '',
+      budget: a?.budget ?? 0,
+      matchScore: a?.matchScore ?? (computedMine ? 100 : 0),
+      matchLabel: a?.matchLabel || '',
+      matchBreakdown: a?.matchBreakdown || null,
+      matchReasons: a?.matchReasons || [],
+      isOnline: isCurrentlyOnline(ownerObj?.isOnline ?? a?.isOnline ?? false, ownerObj?.lastSeen || a?.lastSeen),
+      lastSeen: ownerObj?.lastSeen || a?.lastSeen || null,
+      isMine: computedMine,
+      image: ownerObj?.photo?.url || ownerObj?.photo || a?.image || myProfile.image,
+      bio: a?.description || a?.bio || '',
+      apartmentImages,
+      apartmentBio: a?.description || a?.apartmentBio || '',
+      amenities: Array.isArray(a?.amenities) ? a.amenities : [],
+      traits: ownerObj?.traits || a?.traits || [],
+    };
+  };
+
   // ── EFFECTS ──
   useEffect(() => { if (selectedProfile) setDetailImgIdx(0); }, [selectedProfile]);
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('sc_dark_mode');
+    if (storedTheme === '1') setDarkMode(true);
+    if (storedTheme === '0') setDarkMode(false);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sc_dark_mode', darkMode ? '1' : '0');
+  }, [darkMode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('emailVerifyToken');
+    if (!token) return;
+
+    const run = async () => {
+      try {
+        const res = await fetch('/api/users/email-change/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          showToast('Email vérifié avec succès.');
+        } else {
+          showToast(data.message || 'Lien de vérification invalide.', 'error');
+        }
+      } catch (_) {
+        showToast('Impossible de vérifier le lien email.', 'error');
+      } finally {
+        params.delete('emailVerifyToken');
+        const cleaned = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+        window.history.replaceState({}, '', cleaned);
+        loadSettingsData();
+      }
+    };
+
+    run();
+  }, []);
   
   useEffect(() => {
-    
     const any = selectedProfile||isSettingsOpen||isMyProfileOpen||isCreateAdOpen||zoomedImage;
-    document.body.style.overflow = any?'hidden':'';
-    return () => { document.body.style.overflow=''; };
+
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+
+    if (any) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+    };
   }, [selectedProfile,isSettingsOpen,isMyProfileOpen,isCreateAdOpen,zoomedImage]);
   useEffect(() => {
     const h = e => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setIsDropdownOpen(false);
+      if (searchRef.current && !searchRef.current.contains(e.target)) setIsPriceFiltersOpen(false);
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) setIsProfileMenuOpen(false);
+      if (aiPanelRef.current && !aiPanelRef.current.contains(e.target)) setIsAiOpen(false);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
+  useEffect(() => {
+    if (isAiOpen && aiMessagesEndRef.current) {
+      aiMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isAiOpen, aiMessages, aiIsTyping]);
+  useEffect(() => {
+    const onResize = () => setIsAiCompactMobile(window.innerWidth < 700);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   useEffect(() => {
     const h = e => {
       if (ambientRef.current) {
@@ -528,56 +1270,38 @@ export default function Feed() {
   useEffect(() => {
     if (messagesEndRef.current && isMessagesOpen && activeConvId) {
       messagesEndRef.current.scrollIntoView({behavior:'smooth'});
-      setConversations(p => p.map(c => c.userId===activeConvId?{...c,unread:0}:c));
     }
   }, [conversations, activeConvId, isMessagesOpen]);
 
-  // ── LOAD FEED FROM API ──
   useEffect(() => {
-    const loadFeed = async () => {
-      try {
-        const token = localStorage.getItem('sc_token');
-        if (!token) return; // pas de token → garde les données demo
+    if (!isMessagesOpen) return;
+    fetchConversations();
+  }, [isMessagesOpen, fetchConversations]);
 
-        const res = await fetch('/api/users/feed', {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        const data = await res.json();
+  useEffect(() => {
+    fetchUnreadCount();
 
-        // Convertit les vrais users en format annonce
-        // HNA F FEED.JSX 
-const realUsers = annonces.map(a => ({
-  id:             a._id,
-  name:           a.owner?.name || 'Inconnu',
-  age:            a.owner?.age,
-  ecole:          a.owner?.ecole,
-  city:           a.city,
-  budget:         a.budget,
-  matchScore:     80, 
-  isOnline:       a.owner?.isOnline,
-  isMine:         false,
-  image:          a.owner?.photo?.url || a.owner?.photo || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
-  bio:            a.owner?.bio || '',
-  apartmentImages: a.photos?.length > 0 ? a.photos.map(p => p.url) : [],
-  apartmentBio:   a.description || '',
-  amenities:      a.amenities || [],
-  traits:         a.owner?.traits || [],
-}));
+    const intervalId = setInterval(() => {
+      fetchUnreadCount();
+    }, 15000);
 
-console.log("✅ realUsers li wjdat l-karta:", realUsers);
-        // Garde toujours les données demo EN PLUS des vrais users
-        setAnnonces(prev => {
-          // filtre les démos pour éviter doublons avec vrais users
-          const demoData = prev.filter(a => typeof a.id === 'number');
-          return [...realUsers, ...demoData];
-        });
+    return () => clearInterval(intervalId);
+  }, [fetchUnreadCount]);
 
-      } catch (err) {
-        console.log('API non disponible, données demo utilisées.');
-      }
-    };
-    loadFeed();
-  }, []);
+  useEffect(() => {
+    if (!isMessagesOpen || !activeConvId) return;
+    loadMessagesWithUser(activeConvId);
+  }, [isMessagesOpen, activeConvId, loadMessagesWithUser]);
+
+  useEffect(() => {
+    if (!isMessagesOpen || !activeConvId) return;
+
+    const intervalId = setInterval(() => {
+      loadMessagesWithUser(activeConvId, false);
+    }, 6000);
+
+    return () => clearInterval(intervalId);
+  }, [isMessagesOpen, activeConvId, loadMessagesWithUser]);
 
   // ── LOAD MY PROFILE FROM API ──
   useEffect(() => {
@@ -590,6 +1314,7 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
         });
         const data = await res.json();
         if (data.success && data.user) {
+          setMyUserId(data.user._id || null);
           setMyProfile({
             name:   data.user.name  || 'Utilisateur',
             age:    data.user.age   || 20,
@@ -614,25 +1339,26 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
   useEffect(() => {
     const fetchAnnonces = async () => {
       try {
-        // ⚠️ T2eked mn smit l-token li m-siyvi f localStorage (wach 'token' wla 'sc_token')
         const token = localStorage.getItem('sc_token'); 
-        console.log("🔑 Token li sftna:", token); // Nchoufo wach l-token kayn b3da!
+        if (!token) return;
 
-        const response = await fetch('http://localhost:5000/api/annonces', {
+        const response = await fetch('/api/annonces', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           }
         });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.message || 'Erreur chargement annonces');
+        }
         
         const data = await response.json();
-        console.log("🚀 Data li jat mn Backend:", data); // Nchoufo achno jab l-backend!
         
-        if (data.success) {
-          setAnnonces(data.annonces);
-        } else {
-          console.error("❌ Mouchkil f data:", data.message);
+        if (data.success && Array.isArray(data.annonces)) {
+          setAnnonces(data.annonces.map(a => normalizeAnnonce(a)));
         }
       } catch (err) {
         console.error('❌ Erreur de connexion m3a backend:', err);
@@ -640,14 +1366,39 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
     };
 
     fetchAnnonces();
-  }, []);
+  }, [myUserId]);
 
   // ── HANDLERS ──
-  const totalUnread = conversations.reduce((a,c) => a+(c.unread||0), 0);
+  const localUnread = conversations.reduce((a,c) => a+(c.unread||0), 0);
+  const totalUnread = Math.max(unreadCount, localUnread);
 
-  const handleDeleteAd = (e, id) => {
+  const handleDeleteAd = async (e, id) => {
     e.stopPropagation();
-    if (window.confirm('Supprimer cette annonce ?')) { setAnnonces(a => a.filter(ad => ad.id!==id)); showToast('Annonce supprimée','error'); }
+    if (!window.confirm('Supprimer cette annonce ?')) return;
+
+    const token = localStorage.getItem('sc_token');
+    if (!token) {
+      showToast("Connecte-toi d'abord", 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/annonces/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Suppression impossible');
+      }
+
+      setAnnonces(prev => prev.filter(ad => ad.id !== id));
+      if (selectedProfile?.id === id) setSelectedProfile(null);
+      showToast('Annonce supprimée', 'success');
+    } catch (err) {
+      showToast('Erreur suppression: ' + err.message, 'error');
+    }
   };
   const handleToggleFavorite = (e, id) => {
     e.stopPropagation();
@@ -666,106 +1417,214 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
   };
   const closeCreateAd = () => { setIsCreateAdOpen(false); setEditingAdId(null); setNewAdData({city:'',budget:'',description:'',images:[],amenities:[]}); };
   const handlePublishAd = async () => {
-  // 1. Validation sghira
-  if (!newAdData.city || !newAdData.budget) {
-    return alert("🚨 L-mdina w l-budget darouriyin!");
-  }
+    if (isPublishing) return;
 
-  // 2. N-jibou l-token mn localStorage HNA L-FOUG QBEL KOLCHI
-  const token = localStorage.getItem('sc_token'); 
-  if (!token) return alert("🚨 Khassk t-koun m-connecté bach t-publiyi annonce!");
+    if (!newAdData.city || !newAdData.budget) {
+      showToast('Ville et loyer requis', 'error');
+      return;
+    }
 
-  try {
-    let uploadedPhotos = [];
+    const token = localStorage.getItem('sc_token');
+    if (!token) { showToast("Connecte-toi d'abord", 'error'); return; }
 
-    // ==========================================
-    // ETAPE 1 : UPLOAD DYAL T-TSAWER L-CLOUDINARY
-    // ==========================================
-    if (newAdData.images && newAdData.images.length > 0) {
-      const formData = new FormData();
-      
-      for (const img of newAdData.images) {
-        if (typeof img === 'string' && img.startsWith('blob:')) {
-          // L-koud li k-y-7ewel Lien blob l-Fichier s7i7
-          const response = await fetch(img);
-          const blobData = await response.blob();
-          const file = new File([blobData], `image-${Date.now()}.jpg`, { type: blobData.type });
-          formData.append('photos', file);
+    try {
+      setIsPublishing(true);
+      let uploadedPhotos = [];
+
+      // ── ÉTAPE 1: Upload photos vers Cloudinary ──
+      if (newAdData.images && newAdData.images.length > 0) {
+        const formData = new FormData();
+        await Promise.all(newAdData.images.map(async (imgUrl, i) => {
+          try {
+            const blob = await fetch(imgUrl).then(r => r.blob());
+            const file = new File([blob], `photo_${i}.jpg`, { type: blob.type || 'image/jpeg' });
+            formData.append('photos', file);
+          } catch (_) {}
+        }));
+
+        const uploadRes  = await fetch('/api/upload/annonce', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          uploadedPhotos = uploadData.photos;
         } else {
-          formData.append('photos', img);
+          showToast('Erreur upload: ' + uploadData.message, 'error');
+          return;
         }
       }
 
-      const uploadRes = await fetch('http://localhost:5000/api/upload/annonce', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }, // Daba l-token m3erfa l-foug w gha t-khdem mzyan!
-        body: formData 
+      // ── ÉTAPE 2: Créer ou modifier l'annonce ──
+      const url    = editingAdId ? `/api/annonces/${editingAdId}` : '/api/annonces';
+      const method = editingAdId ? 'PUT' : 'POST';
+
+      const res  = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          city:        newAdData.city,
+          budget:      Number(newAdData.budget),
+          description: newAdData.description,
+          amenities:   newAdData.amenities,
+          photos:      uploadedPhotos,
+        }),
       });
+      const data = await res.json();
 
-      const uploadData = await uploadRes.json();
-      
-      if (uploadData.success) {
-        uploadedPhotos = uploadData.photos; 
+      if (data.success) {
+        if (data.annonce) {
+          const normalized = normalizeAnnonce(data.annonce, { forceMine: true });
+          setAnnonces(prev => {
+            if (editingAdId) {
+              let found = false;
+              const updated = prev.map(a => {
+                if (a.id === normalized.id) {
+                  found = true;
+                  return normalized;
+                }
+                return a;
+              });
+              return found ? updated : [normalized, ...updated];
+            }
+            const deduped = prev.filter(a => a.id !== normalized.id);
+            return [normalized, ...deduped];
+          });
+          setActiveTab('mes_annonces');
+        }
+
+        showToast(editingAdId ? 'Annonce modifiée' : 'Annonce publiée !');
+        closeCreateAd();
       } else {
-        return alert("❌ Mouchkil f upload d-tsawer: " + uploadData.message);
+        showToast('Erreur: ' + data.message, 'error');
       }
+
+    } catch (err) {
+      console.error('handlePublishAd error:', err);
+      showToast('Erreur réseau ou serveur', 'error');
+    } finally {
+      setIsPublishing(false);
     }
-
-    // ==========================================
-    // ETAPE 2 : CRÉATION AWLA MODIFICATION D L-ANNONCE
-    // ==========================================
-    const payload = {
-      city: newAdData.city,
-      budget: newAdData.budget,
-      description: newAdData.description,
-      amenities: newAdData.amenities,
-      photos: uploadedPhotos 
-    };
-
-    const url = editingAdId 
-      ? `http://localhost:5000/api/annonces/${editingAdId}` 
-      : 'http://localhost:5000/api/annonces';
-    const method = editingAdId ? 'PUT' : 'POST';
-
-    const annonceRes = await fetch(url, {
-      method: method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const finalData = await annonceRes.json();
-
-    if (finalData.success) {
-      alert(editingAdId ? "✅ Annonce t-modifat mzyan!" : "✅ Annonce t-kreyat mzyan!");
-      
-      // N-seddou l-modal w n-videw l-formulaire
-      closeCreateAd(); 
-      setNewAdData({ city: '', budget: '', description: '', amenities: [], images: [] });
-      
-      // Ila 3ndk chi fonction k-t-jib l-annonces jdad, 7eyed l-commentaires 3liha hna:
-       fetchAnnonces(); 
-      
-    } else {
-      alert("❌ Erreur: " + finalData.message);
-    }
-
-  } catch (error) {
-    console.error("❌ Mouchkil f handlePublishAd:", error);
-    alert("❌ Mouchkil f réseau awla serveur.");
-  }
-};
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    setConversations(prev => prev.map(c => c.userId===activeConvId?{...c,messages:[...c.messages,{text:newMessage,sender:'me',time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}],lastMessage:newMessage,unread:0}:c));
-    setNewMessage('');
   };
+  const sendMessage = async () => {
+    const textToSend = newMessage.trim();
+    if ((!textToSend && !previewImage) || !activeConvId || isSendingMessage) return;
+
+    const token = localStorage.getItem('sc_token');
+    if (!token) {
+      showToast("Connecte-toi d'abord", 'error');
+      return;
+    }
+
+    setIsSendingMessage(true);
+    setNewMessage('');
+
+    try {
+      const body = { text: textToSend };
+      
+      // If there's an image, upload the real file/blob first.
+      if (previewImage) {
+        const imageToUpload = selectedImage || previewImage;
+        const formData = new FormData();
+        if (imageToUpload instanceof File || imageToUpload instanceof Blob) {
+          const fileName = imageToUpload instanceof File ? imageToUpload.name : `chat-${Date.now()}.jpg`;
+          formData.append('image', imageToUpload, fileName);
+        } else if (typeof imageToUpload === 'string') {
+          const blob = await fetch(imageToUpload).then(r => r.blob());
+          formData.append('image', blob, `chat-${Date.now()}.jpg`);
+        } else {
+          throw new Error('Image invalide pour l\'upload');
+        }
+        
+        const uploadRes = await fetch('/api/messages/upload/image', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        const uploadData = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok || !uploadData.success) {
+          throw new Error(uploadData.message || 'Upload image impossible');
+        }
+        
+        body.imageUrl = uploadData.imageUrl;
+        body.imagePublicId = uploadData.imagePublicId;
+        setPreviewImage(null);
+        setSelectedImage(null);
+      }
+
+      const res = await fetch(`/api/messages/${activeConvId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Envoi impossible');
+      }
+
+      const sent = data.message;
+      const mappedLocalMsg = {
+        id: sent?._id || Date.now().toString(),
+        text: sent?.text || textToSend,
+        imageUrl: sent?.imageUrl || null,
+        sender: 'me',
+        time: toTimeLabel(sent?.createdAt || new Date()),
+      };
+
+      setConversations(prev => prev.map(c => String(c.userId) === String(activeConvId)
+        ? {
+            ...c,
+            messages: [...(c.messages || []), mappedLocalMsg],
+            lastMessage: mappedLocalMsg.text,
+            time: mappedLocalMsg.time,
+            unread: 0,
+          }
+        : c));
+
+      // Keep local state instant, then sync from backend in background.
+      loadMessagesWithUser(activeConvId, false);
+      fetchConversations();
+    } catch (err) {
+      setNewMessage(textToSend);
+      showToast('Erreur message: ' + err.message, 'error');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   const handleContact = (profile) => {
-    if (!conversations.find(c=>c.userId===profile.id)) setConversations(prev=>[{id:profile.id,userId:profile.id,name:profile.name,image:profile.image,isOnline:profile.isOnline,unread:0,lastMessage:'',time:'Maintenant',messages:[]}, ...prev]);
-    setActiveConvId(profile.id);
+    const rawTarget = profile.ownerId || profile.userId;
+    const targetId = rawTarget ? String(rawTarget) : '';
+
+    if (!targetId || targetId === 'undefined' || targetId === 'null') {
+      showToast('Impossible de trouver le destinataire', 'error');
+      return;
+    }
+
+    if (!conversations.find(c => String(c.userId) === targetId)) {
+      setConversations(prev => [{
+        id: targetId,
+        userId: targetId,
+        name: profile.name,
+        image: profile.image,
+        isOnline: !!profile.isOnline,
+        unread: 0,
+        lastMessage: '',
+        time: '',
+        messages: [],
+      }, ...prev]);
+    }
+
+    setActiveConvId(targetId);
     setIsMessagesOpen(true);
+    loadMessagesWithUser(targetId, false);
   };
   const openProfileEdit = async () => {
     // Recharge les vraies données depuis MongoDB avant d'ouvrir le modal
@@ -854,12 +1713,37 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
   };
 
   // ── COMPUTED ──
-  const filteredToutes = annonces.filter(p => !searchCity || p.city.toLowerCase().includes(searchCity.toLowerCase()));
+  const filteredToutes = annonces.filter(p => {
+    const cityOk = !searchCity || p.city.toLowerCase().includes(searchCity.toLowerCase());
+    const budget = Number(p.budget) || 0;
+    const minOk = !priceMin || budget >= Number(priceMin);
+    const maxOk = !priceMax || budget <= Number(priceMax);
+    return cityOk && minOk && maxOk;
+  });
+  const filteredMatching = filteredToutes
+    .filter(p => !p.isMine && (p.matchScore ?? 0) >= matchingThreshold)
+    .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
   const mesAnnonces = annonces.filter(p => p.isMine);
   const filteredFavoris = annonces.filter(p => favorites.includes(p.id));
   const filteredCities = moroccanCities.filter(c => c.toLowerCase().includes(searchCity.toLowerCase()));
-  const activeChat = conversations.find(c => c.userId===activeConvId);
-  const gridData = activeTab==='toutes'?filteredToutes : activeTab==='mes_annonces'?mesAnnonces : filteredFavoris;
+  const activeChat = conversations.find(c => String(c.userId) === String(activeConvId));
+  const matchingProgress = ((matchingThreshold - 50) / 45) * 100;
+  const hasPriceFilter = !!priceMin || !!priceMax;
+  const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
+  const contactCanSubmit =
+    contactForm.name.trim().length >= 2 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactForm.email.trim()) &&
+    contactForm.subject.trim().length >= 3 &&
+    contactForm.message.trim().length >= 10;
+  const gridData = activeTab==='toutes'
+    ? filteredToutes
+    : activeTab==='matching'
+      ? filteredMatching
+      : activeTab==='mes_annonces'
+        ? mesAnnonces
+        : activeTab==='favoris'
+          ? filteredFavoris
+          : [];
 
   // ── CSS ──
   const css = `
@@ -869,8 +1753,10 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
 
     /* CARDS */
     .annonces-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:24px;max-width:1200px;margin:0 auto;padding:24px;position:relative;z-index:0}
-    .annonce-card{background:${surface};border-radius:20px;overflow:hidden;border:1px solid ${border};transition:transform 0.3s cubic-bezier(0.16,1,0.3,1),box-shadow 0.3s ease;cursor:pointer;animation:cardIn 0.5s cubic-bezier(0.16,1,0.3,1) both;animation-delay:var(--delay,0ms)}
-    .annonce-card:hover{transform:translateY(-6px) scale(1.01);box-shadow:0 24px 50px rgba(0,0,0,${darkMode?'0.4':'0.12'})}
+    .annonce-card{background:${surface};border-radius:20px;overflow:hidden;border:1px solid ${border};transition:transform 0.32s cubic-bezier(0.16,1,0.3,1),box-shadow 0.32s ease,border-color 0.2s ease;cursor:pointer;animation:cardIn 0.5s cubic-bezier(0.16,1,0.3,1) both;animation-delay:var(--delay,0ms);position:relative}
+    .annonce-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(234,88,12,0.07),transparent 45%);opacity:0;transition:opacity 0.3s;pointer-events:none}
+    .annonce-card:hover{transform:translateY(-7px) scale(1.012);box-shadow:0 24px 50px rgba(0,0,0,${darkMode?'0.4':'0.12'});border-color:${darkMode?'#475569':'#e2e8f0'}}
+    .annonce-card:hover::after{opacity:1}
     .image-wrapper{width:100%;height:215px;background:#0b1120;position:relative;overflow:hidden}
 
     /* BUTTONS IN CARD */
@@ -887,8 +1773,8 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
     .dots-container{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
     .dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);transition:all 0.3s}
     .dot.active{width:16px;border-radius:10px;background:white}
-    .contact-btn{background:linear-gradient(135deg,#ea580c,#f97316);color:white;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(234,88,12,0.35);transition:all 0.25s;display:flex;align-items:center;gap:6px;font-family:inherit}
-    .contact-btn:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(234,88,12,0.5)}
+    .contact-btn{background:linear-gradient(135deg,#ea580c,#f97316);color:white;border:none;padding:9px 16px;border-radius:20px;font-size:0.8rem;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(234,88,12,0.35);transition:all 0.25s;display:flex;align-items:center;gap:6px;font-family:inherit;letter-spacing:0.1px}
+    .contact-btn:hover{transform:translateY(-1px) scale(1.03);box-shadow:0 10px 22px rgba(234,88,12,0.42)}
     .btn-secondary{display:flex;align-items:center;gap:5px;background:${darkMode?'rgba(255,255,255,0.06)':'#f8fafc'};color:${text};border:1px solid ${borderStrong};padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s}
     .btn-secondary:hover{background:${darkMode?'rgba(255,255,255,0.1)':'#f1f5f9'}}
     .btn-danger{display:flex;align-items:center;justify-content:center;background:#fef2f2;color:#ef4444;border:1px solid #fecaca;padding:6px 10px;border-radius:16px;font-size:0.78rem;cursor:pointer;font-family:inherit;transition:all 0.2s}
@@ -907,6 +1793,24 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
     .tab-item.active::after{transform:scaleX(1)}
     .tab-count{background:${darkMode?'rgba(255,255,255,0.08)':'#f1f5f9'};color:${textMuted};font-size:0.68rem;font-weight:800;padding:2px 7px;border-radius:20px;transition:all 0.2s}
     .tab-item.active .tab-count{background:${darkMode?'#ea580c':'#0f172a'};color:white}
+
+    .tab-animate{animation:tabPanelIn 0.22s ease-out}
+
+    /* CONTACT PANEL */
+    .contact-shell{max-width:980px;width:calc(100% - 40px);margin:0 auto 36px;display:grid;grid-template-columns:0.95fr 1.05fr;gap:14px}
+    .contact-panel{border:1px solid ${borderStrong};border-radius:20px;background:${surface};box-shadow:${darkMode?'0 14px 34px rgba(0,0,0,0.36)':'0 14px 34px rgba(15,23,42,0.08)'};padding:20px}
+    .contact-chip{padding:6px 10px;border-radius:999px;border:1px solid ${borderStrong};background:${darkMode?'rgba(255,255,255,0.04)':'#f8fafc'};color:${textMuted};font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+    .contact-chip:hover{border-color:#ea580c;color:#ea580c}
+    .contact-chip.active{border-color:#ea580c;background:${darkMode?'rgba(234,88,12,0.16)':'#fff7ed'};color:#ea580c}
+    .contact-meter{height:6px;border-radius:999px;background:${darkMode?'#1e293b':'#e2e8f0'};overflow:hidden}
+    .contact-meter > span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ea580c,#fb923c);transition:width 0.2s}
+    .contact-send:disabled{opacity:0.6;cursor:not-allowed}
+    .contact-shell.tab-animate .contact-panel:first-child{animation:contactPanelLeft 0.34s ease-out both}
+    .contact-shell.tab-animate .contact-panel:last-child{animation:contactPanelRight 0.38s ease-out 0.04s both}
+    .contact-shell.tab-animate .contact-chip{animation:contactChipIn 0.3s ease-out both}
+    .contact-shell.tab-animate .contact-chip:nth-child(1){animation-delay:0.06s}
+    .contact-shell.tab-animate .contact-chip:nth-child(2){animation-delay:0.09s}
+    .contact-shell.tab-animate .contact-chip:nth-child(3){animation-delay:0.12s}
 
     /* SEARCH */
     .search-dropdown{position:absolute;top:calc(100% + 8px);left:0;width:100%;background:${surface};border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,${darkMode?'0.4':'0.12'});border:1px solid ${borderStrong};max-height:230px;overflow-y:auto;z-index:9000;animation:dropIn 0.2s cubic-bezier(0.16,1,0.3,1)}
@@ -979,6 +1883,17 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
     @keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
     @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)}50%{box-shadow:0 0 0 5px rgba(34,197,94,0)}}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes aiGlow{0%,100%{box-shadow:0 0 0 0 rgba(234,88,12,0.45)}50%{box-shadow:0 0 0 8px rgba(234,88,12,0)}}
+    @keyframes typingDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+    @keyframes tabPanelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes contactPanelLeft{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes contactPanelRight{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes contactChipIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    @media(max-width: 920px){
+      .contact-shell{grid-template-columns:1fr;width:calc(100% - 24px)}
+      .contact-panel{padding:16px}
+    }
   `;
 
   // ── LOGIN SCREEN ──
@@ -1010,7 +1925,7 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
             <I.plus width="14" height="14" /> Publier
           </button>
           {/* MESSAGES */}
-          <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); }}>
+          <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); fetchConversations(); }}>
             <I.chat width="17" height="17" style={{ color:textMuted }} />
             {totalUnread > 0 && <span className="badge-dot">{totalUnread}</span>}
           </div>
@@ -1031,7 +1946,7 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                   </div>
                 </div>
                 <div style={{ padding:'8px' }}>
-                  {[{icon:<I.user width="14" height="14"/>, label:'Mon Profil', fn:openProfileEdit},{icon:<I.settings width="14" height="14"/>, label:'Paramètres', fn:()=>{setIsSettingsOpen(true);setIsProfileMenuOpen(false);}}].map(({icon,label,fn})=>(
+                  {[{icon:<I.user width="14" height="14"/>, label:'Mon Profil', fn:openProfileEdit},{icon:<I.settings width="14" height="14"/>, label:'Paramètres', fn:()=>{openSettingsModal();setIsProfileMenuOpen(false);}}].map(({icon,label,fn})=>(
                     <div key={label} onClick={fn} style={{ padding:'10px 12px', cursor:'pointer', color:textMuted, fontWeight:'600', fontSize:'0.85rem', borderRadius:'10px', display:'flex', alignItems:'center', gap:'9px', transition:'all 0.15s' }}
                       onMouseOver={e=>{e.currentTarget.style.background=darkMode?'rgba(255,255,255,0.06)':'#f8fafc';e.currentTarget.style.color=text;}}
                       onMouseOut={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color=textMuted;}}>
@@ -1065,7 +1980,7 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
       {/* ── TABS ── */}
       <div className="tabs-wrapper">
         <div className="tabs-container">
-          {[['toutes','Toutes les annonces',<I.home width="13" height="13"/>,filteredToutes.length],['mes_annonces','Mes annonces',<I.edit width="13" height="13"/>,mesAnnonces.length],['favoris','Favoris',<I.heart width="13" height="13"/>,filteredFavoris.length]].map(([key,label,icon,count])=>(
+          {[['toutes','Toutes les annonces',<I.home width="13" height="13"/>,filteredToutes.length],['matching','Matching',<I.zap width="13" height="13"/>,filteredMatching.length],['mes_annonces','Mes annonces',<I.edit width="13" height="13"/>,mesAnnonces.length],['favoris','Favoris',<I.heart width="13" height="13"/>,filteredFavoris.length],['contact','Contact',<I.mail width="13" height="13"/>,0]].map(([key,label,icon,count])=>(
             <div key={key} className={`tab-item ${activeTab===key?'active':''}`} onClick={()=>setActiveTab(key)}>
               <span style={{ color: activeTab===key?'#ea580c':'inherit', display:'flex' }}>{icon}</span>
               {label}
@@ -1076,48 +1991,366 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
       </div>
 
       {/* ── HEADER ── */}
-      <div style={{ padding:'0 5%', margin:'32px 0 10px', textAlign:'center', zIndex:950, position:'relative' }}>
+      <div className="tab-animate" style={{ padding:'0 5%', margin:'32px 0 10px', textAlign:'center', zIndex:950, position:'relative' }}>
         <h1 style={{ fontSize:'1.75rem', fontWeight:'900', color:text, margin:'0 0 4px', letterSpacing:'-0.5px' }}>
-          {activeTab==='toutes'?'Trouve ton logement idéal': activeTab==='mes_annonces'?'Mes publications':'Mes annonces sauvegardées'}
+          {activeTab==='toutes'
+            ? 'Trouve ton logement idéal'
+            : activeTab==='matching'
+              ? 'Annonces compatibles avec ton profil'
+              : activeTab==='mes_annonces'
+                ? 'Mes publications'
+                : activeTab==='favoris'
+                  ? 'Mes annonces sauvegardées'
+                  : 'Contact Support'}
         </h1>
         {activeTab==='toutes' && <p style={{ margin:'0 0 20px', color:textMuted, fontSize:'0.88rem' }}>{filteredToutes.length} annonce{filteredToutes.length!==1?'s':''} disponible{filteredToutes.length!==1?'s':''}</p>}
+        {activeTab==='matching' && <p style={{ margin:'0 0 20px', color:textMuted, fontSize:'0.88rem' }}>{filteredMatching.length} annonce{filteredMatching.length!==1?'s':''} compatible{filteredMatching.length!==1?'s':''} à partir de {matchingThreshold}% de matching</p>}
+        {activeTab==='contact' && <p style={{ margin:'0 0 20px', color:textMuted, fontSize:'0.88rem' }}>Envoie-nous ton message sans quitter le feed</p>}
+
+        {activeTab==='matching' && (
+          <div style={{ maxWidth:'560px', margin:'0 auto 18px' }}>
+            <label className="pro-label">
+              <I.zap width="12" height="12" style={{color:'#ea580c'}}/>Seuil minimum de matching
+            </label>
+            <div style={{ display:'grid', gridTemplateColumns:'96px 1fr', gap:'10px', alignItems:'center' }}>
+              <input
+                type="number"
+                min="50"
+                max="95"
+                step="5"
+                className="pro-input"
+                value={matchingThreshold}
+                onChange={e => {
+                  const raw = Number(e.target.value);
+                  if (Number.isNaN(raw)) return;
+                  const clamped = Math.min(95, Math.max(50, raw));
+                  setMatchingThreshold(clamped);
+                }}
+                style={{ marginBottom:0, textAlign:'center', fontWeight:'800' }}
+              />
+
+              <div>
+                <input
+                  type="range"
+                  min="50"
+                  max="95"
+                  step="5"
+                  value={matchingThreshold}
+                  onChange={e => setMatchingThreshold(Number(e.target.value))}
+                  style={{ width:'100%', accentColor:'#ea580c' }}
+                />
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:'5px', color:textMuted, fontSize:'0.68rem', fontWeight:'700' }}>
+                  {[50,60,70,80,90,95].map(v => <span key={v}>{v}</span>)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop:'6px', fontSize:'0.75rem', color:textMuted }}>
+              Affiche les annonces avec un score de {matchingThreshold}% et plus
+            </div>
+          </div>
+        )}
 
         {activeTab==='toutes' && (
-          <div ref={searchRef} style={{ maxWidth:'500px', margin:'0 auto', position:'relative' }}>
-            <div style={{ display:'flex', alignItems:'center', background:surface, borderRadius:'50px', padding:'10px 20px', border:`1.5px solid ${isDropdownOpen?'#ea580c':borderStrong}`, boxShadow:`0 8px 25px rgba(0,0,0,${darkMode?'0.2':'0.06'})`, transition:'all 0.25s' }}>
-              <I.search width="16" height="16" style={{ color:textMuted, flexShrink:0 }} />
-              <input type="text" placeholder="Rechercher par ville..." value={searchCity}
-                onChange={e=>{setSearchCity(e.target.value);setIsDropdownOpen(true);}}
-                onFocus={()=>setIsDropdownOpen(true)}
-                style={{ background:'transparent', border:'none', outline:'none', flex:1, padding:'0 12px', fontSize:'0.9rem', fontWeight:'500', color:text }} />
-              {searchCity && <button onClick={()=>{setSearchCity('');setIsDropdownOpen(false);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex', padding:'0' }}><I.x width="14" height="14"/></button>}
+          <div style={{ maxWidth:'620px', margin:'0 auto' }}>
+            <div ref={searchRef} style={{ position:'relative' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'10px', alignItems:'center' }}>
+                <div style={{ display:'flex', alignItems:'center', background:surface, borderRadius:'50px', padding:'10px 20px', border:`1.5px solid ${isDropdownOpen?'#ea580c':borderStrong}`, boxShadow:`0 8px 25px rgba(0,0,0,${darkMode?'0.2':'0.06'})`, transition:'all 0.25s' }}>
+                <I.search width="16" height="16" style={{ color:textMuted, flexShrink:0 }} />
+                <input type="text" placeholder="Rechercher par ville..." value={searchCity}
+                  onChange={e=>{setSearchCity(e.target.value);setIsDropdownOpen(true);}}
+                  onFocus={()=>setIsDropdownOpen(true)}
+                  style={{ background:'transparent', border:'none', outline:'none', flex:1, padding:'0 12px', fontSize:'0.9rem', fontWeight:'500', color:text }} />
+                {searchCity && <button onClick={()=>{setSearchCity('');setIsDropdownOpen(false);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex', padding:'0' }}><I.x width="14" height="14"/></button>}
+                </div>
+                <div style={{ position:'relative' }}>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => {
+                      if (isPriceFiltersOpen) {
+                        setIsPriceFiltersOpen(false);
+                      } else {
+                        openPriceFilters();
+                      }
+                    }}
+                    style={{
+                      height:'100%',
+                      minHeight:'44px',
+                      padding:'0 16px',
+                      borderRadius:'999px',
+                      borderColor: isPriceFiltersOpen || hasPriceFilter ? '#ea580c' : borderStrong,
+                      color: isPriceFiltersOpen || hasPriceFilter ? '#ea580c' : text,
+                      background: isPriceFiltersOpen ? (darkMode ? 'rgba(234,88,12,0.14)' : '#fff7ed') : undefined,
+                      fontWeight:'800'
+                    }}
+                  >
+                    <I.filter width="14" height="14" />
+                    Filtres
+                    {activeFiltersCount > 0 && (
+                      <span style={{ marginLeft:'2px', minWidth:'18px', height:'18px', borderRadius:'999px', background:'#ea580c', color:'white', fontSize:'0.68rem', display:'inline-flex', alignItems:'center', justifyContent:'center', padding:'0 6px', fontWeight:'900' }}>
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isPriceFiltersOpen && (
+                    <div style={{ position:'absolute', top:'calc(100% + 8px)', right:0, width:'356px', maxWidth:'92vw', padding:'12px', borderRadius:'14px', border:`1px solid ${borderStrong}`, background:surface, boxShadow:`0 20px 40px rgba(0,0,0,${darkMode?'0.4':'0.12'})`, zIndex:920 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+                        <span style={{ fontSize:'0.8rem', fontWeight:'800', color:text }}>Filtrer par prix</span>
+                        <button onClick={() => setIsPriceFiltersOpen(false)} style={{ background:'transparent', border:'none', color:textMuted, cursor:'pointer', display:'flex', alignItems:'center', padding:0 }}>
+                          <I.x width="14" height="14" />
+                        </button>
+                      </div>
+
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', alignItems:'center' }}>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          className="pro-input"
+                          placeholder="Prix min"
+                          value={draftPriceMin}
+                          onChange={e => setDraftPriceMin(sanitizeBudgetFilterInput(e.target.value))}
+                          style={{ marginBottom:0, textAlign:'center', fontWeight:'700' }}
+                        />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          className="pro-input"
+                          placeholder="Prix max"
+                          value={draftPriceMax}
+                          onChange={e => setDraftPriceMax(sanitizeBudgetFilterInput(e.target.value))}
+                          style={{ marginBottom:0, textAlign:'center', fontWeight:'700' }}
+                        />
+                      </div>
+
+                      <div style={{ marginTop:'8px', display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                        {[
+                          { label:'0-1200', min:'0', max:'1200' },
+                          { label:'1200-1800', min:'1200', max:'1800' },
+                          { label:'1800-2500', min:'1800', max:'2500' },
+                          { label:'2500+', min:'2500', max:'' },
+                        ].map((preset) => {
+                          const isOn = draftPriceMin === preset.min && draftPriceMax === preset.max;
+                          return (
+                            <button
+                              key={preset.label}
+                              onClick={() => { setDraftPriceMin(preset.min); setDraftPriceMax(preset.max); }}
+                              style={{ border:`1px solid ${isOn ? '#ea580c' : borderStrong}`, background:isOn ? (darkMode ? 'rgba(234,88,12,0.14)' : '#fff7ed') : surface, color:isOn ? '#ea580c' : textMuted, borderRadius:'999px', padding:'5px 10px', fontSize:'0.72rem', fontWeight:'700', cursor:'pointer' }}
+                            >
+                              {preset.label} DH
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ marginTop:'12px', display:'grid', gridTemplateColumns:'auto auto 1fr', gap:'8px' }}>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => { setDraftPriceMin(''); setDraftPriceMax(''); setPriceMin(''); setPriceMax(''); setIsPriceFiltersOpen(false); }}
+                          style={{ justifyContent:'center' }}
+                        >
+                          Effacer
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setIsPriceFiltersOpen(false)}
+                          style={{ justifyContent:'center' }}
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          className="save-btn"
+                          onClick={applyPriceFilters}
+                          style={{ padding:'10px 12px', borderRadius:'11px', fontSize:'0.8rem' }}
+                        >
+                          Appliquer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {isDropdownOpen && filteredCities.length>0 && (
+                <div className="search-dropdown scroll-area">
+                  {filteredCities.slice(0,8).map(city=>(
+                    <div key={city} className="search-item" onClick={()=>{setSearchCity(city);setIsDropdownOpen(false);}}>
+                      <I.pin width="12" height="12" style={{ color:'#ea580c', flexShrink:0 }} />{city}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {isDropdownOpen && filteredCities.length>0 && (
-              <div className="search-dropdown scroll-area">
-                {filteredCities.slice(0,8).map(city=>(
-                  <div key={city} className="search-item" onClick={()=>{setSearchCity(city);setIsDropdownOpen(false);}}>
-                    <I.pin width="12" height="12" style={{ color:'#ea580c', flexShrink:0 }} />{city}
-                  </div>
-                ))}
+
+            {hasPriceFilter && (
+              <div style={{ marginTop:'6px', fontSize:'0.74rem', color:textMuted }}>
+                Filtre prix actif: {priceMin || '0'} - {priceMax || '∞'} DH
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* ── GRID ── */}
-      <div className="annonces-grid" style={{
-        gridTemplateColumns: (activeTab !== 'toutes' && gridData.length === 1)
-          ? 'minmax(290px, 380px)'
-          : (activeTab !== 'toutes' && gridData.length === 2)
-          ? 'repeat(2, minmax(290px, 380px))'
-          : undefined,
-        justifyContent: (activeTab !== 'toutes' && gridData.length <= 2) ? 'center' : undefined
-      }}>
-        {gridData.length===0 && activeTab==='toutes' && <div className="empty-state"><div className="empty-icon"><I.search width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Aucune annonce trouvée</h3><p>Essaie une autre ville ou efface le filtre</p></div>}
-        {gridData.length===0 && activeTab==='mes_annonces' && <div className="empty-state"><div className="empty-icon"><I.home width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Pas encore d'annonce</h3><p>Publie ton premier logement dès maintenant</p><button className="publish-btn" onClick={()=>setIsCreateAdOpen(true)} style={{marginTop:'8px'}}><I.plus width="14" height="14"/> Publier</button></div>}
-        {gridData.length===0 && activeTab==='favoris' && <div className="empty-state"><div className="empty-icon"><I.heart width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Pas encore de favoris</h3><p>Clique sur le cœur pour sauvegarder une annonce</p></div>}
-        {gridData.map((profile,idx) => <AnnonceCard key={profile.id} profile={profile} onSelect={setSelectedProfile} onContact={handleContact} isFavorite={favorites.includes(profile.id)} onToggleFavorite={handleToggleFavorite} onEdit={handleEditAdClick} onDelete={handleDeleteAd} darkMode={darkMode} animDelay={idx*60} />)}
+      {/* ── GRID / CONTACT ── */}
+      {activeTab === 'contact' ? (
+        <div className="contact-shell tab-animate">
+          <aside className="contact-panel" style={{ background: darkMode ? 'linear-gradient(170deg,#111827,#1f2937 70%,#7c2d12)' : 'linear-gradient(170deg,#0f172a,#1e293b 70%,#9a3412)', color:'#f8fafc' }}>
+            <div style={{ display:'inline-flex', padding:'6px 10px', borderRadius:'999px', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.08)', fontSize:'0.74rem', fontWeight:'800' }}>
+              Support prioritaire
+            </div>
+            <h3 style={{ margin:'14px 0 8px', fontSize:'1.5rem', letterSpacing:'-0.4px' }}>Contact SakanCampus</h3>
+            <p style={{ margin:0, color:'rgba(226,232,240,0.9)', fontSize:'0.88rem', lineHeight:1.7 }}>
+              Décris ton problème clairement pour recevoir une réponse plus rapide et plus précise.
+            </p>
+            <div style={{ display:'grid', gap:'9px', marginTop:'16px' }}>
+              <div style={{ border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.08)', borderRadius:'12px', padding:'10px 12px', fontSize:'0.8rem' }}>
+                Réponse moyenne: moins de 24h
+              </div>
+              <div style={{ border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.08)', borderRadius:'12px', padding:'10px 12px', fontSize:'0.8rem' }}>
+                Astuce: ajoute un maximum de contexte
+              </div>
+            </div>
+          </aside>
+
+          <section className="contact-panel">
+            <form onSubmit={submitContactFromFeed} style={{ display:'grid', gap:'10px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+                <input className="pro-input" placeholder="Nom" value={contactForm.name} onChange={e => setContactForm(v => ({ ...v, name: e.target.value }))} />
+                <input className="pro-input" type="email" placeholder="Email" value={contactForm.email} onChange={e => setContactForm(v => ({ ...v, email: e.target.value }))} />
+              </div>
+
+              <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                {['Bug', 'Compte', 'Suggestion'].map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`contact-chip ${contactForm.subject === item ? 'active' : ''}`}
+                    onClick={() => setContactForm(v => ({ ...v, subject: item }))}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+
+              <input className="pro-input" placeholder="Sujet" value={contactForm.subject} onChange={e => setContactForm(v => ({ ...v, subject: e.target.value.slice(0, 140) }))} />
+              <textarea className="pro-input" rows={6} placeholder="Explique ton besoin en detail..." value={contactForm.message} onChange={e => setContactForm(v => ({ ...v, message: e.target.value.slice(0, 5000) }))} style={{ resize:'vertical', minHeight:'140px' }} />
+
+              <div className="contact-meter">
+                <span style={{ width:`${Math.min(100, Math.round((contactForm.message.length / 5000) * 100))}%` }} />
+              </div>
+
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
+                <span style={{ fontSize:'0.75rem', color:textMuted, fontWeight:'700' }}>
+                  {contactForm.message.length}/5000 · min 10
+                </span>
+                <button className="publish-btn contact-send" type="submit" disabled={isContactSending || !contactCanSubmit}>
+                  <I.send width="13" height="13" /> {isContactSending ? 'Envoi...' : 'Envoyer'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : (
+        <div className="annonces-grid tab-animate" style={{
+          gridTemplateColumns: (activeTab !== 'toutes' && gridData.length === 1)
+            ? 'minmax(290px, 380px)'
+            : (activeTab !== 'toutes' && gridData.length === 2)
+            ? 'repeat(2, minmax(290px, 380px))'
+            : undefined,
+          justifyContent: (activeTab !== 'toutes' && gridData.length <= 2) ? 'center' : undefined
+        }}>
+          {gridData.length===0 && activeTab==='toutes' && <div className="empty-state"><div className="empty-icon"><I.search width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Aucune annonce trouvée</h3><p>Essaie une autre ville ou efface le filtre</p></div>}
+          {gridData.length===0 && activeTab==='matching' && <div className="empty-state"><div className="empty-icon"><I.zap width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Pas encore de matching fort</h3><p>Complète ton profil ou baisse le seuil de compatibilité</p></div>}
+          {gridData.length===0 && activeTab==='mes_annonces' && <div className="empty-state"><div className="empty-icon"><I.home width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Pas encore d'annonce</h3><p>Publie ton premier logement dès maintenant</p><button className="publish-btn" onClick={()=>setIsCreateAdOpen(true)} style={{marginTop:'8px'}}><I.plus width="14" height="14"/> Publier</button></div>}
+          {gridData.length===0 && activeTab==='favoris' && <div className="empty-state"><div className="empty-icon"><I.heart width="26" height="26" style={{color:'#94a3b8'}}/></div><h3>Pas encore de favoris</h3><p>Clique sur le cœur pour sauvegarder une annonce</p></div>}
+          {gridData.map((profile,idx) => <AnnonceCard key={profile.id} profile={profile} onSelect={setSelectedProfile} onContact={handleContact} isFavorite={favorites.includes(profile.id)} onToggleFavorite={handleToggleFavorite} onEdit={handleEditAdClick} onDelete={handleDeleteAd} darkMode={darkMode} animDelay={idx*60} />)}
+        </div>
+      )}
+
+      {/* AI ASSISTANT */}
+      <div ref={aiPanelRef} style={{ position:'fixed', right:'20px', bottom:'20px', zIndex:1200 }}>
+        {isAiOpen && (
+          <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', marginBottom:isAiCompactMobile?'6px':'10px', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:isAiCompactMobile?'fixed':'relative', right:isAiCompactMobile?'6px':undefined, bottom:isAiCompactMobile?'6px':undefined }}>
+            <div style={{ padding:'12px 14px', borderBottom:`1px solid ${border}`, background:darkMode?'linear-gradient(135deg,rgba(30,41,59,0.85),rgba(15,23,42,0.92))':'linear-gradient(135deg,#fff7ed,#ffffff)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <div style={{ width:'34px', height:'34px', borderRadius:'11px', background:'linear-gradient(135deg,#ea580c,#f97316)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', position:'relative', animation:'aiGlow 2.4s ease-in-out infinite' }}>
+                  <I.bot width="16" height="16" />
+                  <div style={{ position:'absolute', inset:'-1px', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.5)', pointerEvents:'none' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight:'900', fontSize:'0.95rem', color:text, letterSpacing:'0.2px' }}>Sakan AI</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'2px' }}>
+                    <span style={{ width:'7px', height:'7px', borderRadius:'50%', background: aiRuntimeMode === 'backend' ? '#22c55e' : '#f59e0b' }} />
+                    <span style={{ fontSize:'0.72rem', color:textMuted, fontWeight:'700', whiteSpace:'nowrap' }}>Mode: {aiRuntimeMode === 'backend' ? 'IA' : 'Local'}</span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setIsAiOpen(false)} style={{ border:'none', background:'transparent', cursor:'pointer', color:textMuted, display:'flex' }}>
+                <I.x width="15" height="15" />
+              </button>
+            </div>
+
+            <div className="scroll-area" style={{ flex:1, padding:'12px', display:'flex', flexDirection:'column', gap:'8px' }}>
+              {aiMessages.map(m => (
+                <div key={m.id} style={{ alignSelf:m.role==='user'?'flex-end':'flex-start', maxWidth:'84%' }}>
+                  <div style={{ padding:'9px 12px', borderRadius:'14px', fontSize:'0.82rem', lineHeight:'1.55', background:m.role==='user'?'linear-gradient(135deg,#ea580c,#f97316)':(darkMode?'#334155':'#f1f5f9'), color:m.role==='user'?'white':text, borderBottomRightRadius:m.role==='user'?'4px':'14px', borderBottomLeftRadius:m.role==='assistant'?'4px':'14px', border:m.role==='assistant'?`1px solid ${border}`:'none', boxShadow:m.role==='user'?'0 8px 18px rgba(234,88,12,0.25)':'none' }}>
+                    {m.text}
+                  </div>
+                  <div style={{ fontSize:'0.64rem', color:textMuted, marginTop:'3px', textAlign:m.role==='user'?'right':'left' }}>
+                    {toTimeLabel(m.at)}
+                  </div>
+                </div>
+              ))}
+              {aiIsTyping && (
+                <div style={{ alignSelf:'flex-start', fontSize:'0.76rem', color:textMuted, background:darkMode?'#334155':'#f1f5f9', borderRadius:'12px', padding:'7px 10px', display:'flex', alignItems:'center', gap:'7px', border:`1px solid ${border}` }}>
+                  <span>Sakan AI écrit</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                    {[0,1,2].map(i => (
+                      <span key={i} style={{ width:'5px', height:'5px', borderRadius:'50%', background:textMuted, animation:`typingDot 1.1s ${i * 0.18}s infinite` }} />
+                    ))}
+                  </span>
+                </div>
+              )}
+              <div ref={aiMessagesEndRef} />
+            </div>
+
+            <div style={{ padding:'10px', borderTop:`1px solid ${border}` }}>
+              <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
+                {['Analyse prix', 'Top villes', 'État des filtres', 'Conseil rapide'].map(q => (
+                  <button
+                    key={q}
+                    className="btn-secondary"
+                    onClick={() => handleAiSend(q)}
+                    style={{ fontSize:'0.7rem', padding:'4px 10px', borderRadius:'999px' }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'8px' }}>
+                <input
+                  type="text"
+                  className="pro-input"
+                  placeholder="Posez votre question..."
+                  value={aiInput}
+                  onChange={e => setAiInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAiSend(); }}
+                  style={{ marginBottom:0 }}
+                />
+                <button className="save-btn" onClick={() => handleAiSend()} style={{ width:'42px', minWidth:'42px', height:'42px', borderRadius:'12px', padding:0 }}>
+                  <I.send width="14" height="14" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setIsAiOpen(v => !v)}
+          style={{ width:'54px', height:'54px', borderRadius:'17px', border:'none', background:'linear-gradient(135deg,#ea580c,#f97316)', color:'white', boxShadow:'0 12px 34px rgba(234,88,12,0.45)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', animation:'aiGlow 2.8s ease-in-out infinite' }}
+        >
+          <div style={{ position:'absolute', inset:'2px', borderRadius:'15px', border:'1px solid rgba(255,255,255,0.35)', pointerEvents:'none' }} />
+          <I.bot width="22" height="22" />
+        </button>
       </div>
 
       {/* ══════════════════════════════════════════════
@@ -1219,9 +2452,22 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                     </div>
                     <span style={{ fontSize:'0.82rem', fontWeight:'900', color:'#ea580c', background:'rgba(234,88,12,0.1)', padding:'2px 9px', borderRadius:'20px' }}>{selectedProfile.matchScore}%</span>
                   </div>
+                  {!!selectedProfile.matchLabel && (
+                    <div style={{ marginBottom:'10px', fontSize:'0.76rem', fontWeight:'700', color:textMuted }}>{selectedProfile.matchLabel}</div>
+                  )}
                   <div style={{ height:'7px', background: darkMode?'#334155':'#e2e8f0', borderRadius:'99px', overflow:'hidden' }}>
                     <div style={{ height:'100%', width:`${selectedProfile.matchScore}%`, background:'linear-gradient(90deg,#ea580c,#f97316)', borderRadius:'99px', animation:'matchFill 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
                   </div>
+                  {!!selectedProfile.matchReasons?.length && (
+                    <div style={{ marginTop:'12px', display:'flex', flexDirection:'column', gap:'8px' }}>
+                      {selectedProfile.matchReasons.slice(0, 3).map((reason, idx) => (
+                        <div key={idx} style={{ display:'flex', alignItems:'flex-start', gap:'8px', padding:'8px 10px', borderRadius:'12px', background: darkMode ? 'rgba(255,255,255,0.03)' : '#f8fafc', border:`1px solid ${border}` }}>
+                          <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'#22c55e', marginTop:'6px', flexShrink:0 }} />
+                          <span style={{ fontSize:'0.76rem', color:textMuted, lineHeight:1.45 }}>{reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>}
               </div>
             </div>
@@ -1265,24 +2511,96 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
 
               {settingsTab==='compte' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
+                  {isSettingsLoading && (
+                    <div style={{ padding:'12px 14px', border:`1px solid ${borderStrong}`, borderRadius:'12px', background:surface, color:textMuted, fontSize:'0.8rem', fontWeight:'600' }}>
+                      Chargement des paramètres...
+                    </div>
+                  )}
+
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px', border:`1px solid ${borderStrong}`, borderRadius:'14px', background:surface }}>
                     <div>
                       <h4 style={{ margin:'0 0 3px', color:text, fontSize:'0.88rem', display:'flex', alignItems:'center', gap:'7px' }}><I.moon width="14" height="14" style={{color:'#6366f1'}}/> Mode Sombre</h4>
-                      <p style={{ margin:0, fontSize:'0.76rem', color:textMuted }}>Activer le thème sombre</p>
+                      <p style={{ margin:0, fontSize:'0.76rem', color:textMuted }}>Activer le thème sombre (synchronisé sur ton compte)</p>
                     </div>
                     <div className={`toggle ${darkMode?'on':''}`} onClick={()=>setDarkMode(!darkMode)}><div className="toggle-knob"/></div>
                   </div>
+
                   <div>
                     <label className="pro-label"><I.mail width="12" height="12" style={{color:'#ea580c'}}/>Adresse Email</label>
-                    <input type="email" className="pro-input" defaultValue="oussama@sakan.ma" />
+                    <input
+                      type="email"
+                      className="pro-input"
+                      value={settingsForm.email}
+                      onChange={e => setSettingsForm(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                    <p style={{ margin:'7px 0 0', fontSize:'0.73rem', color:textMuted }}>
+                      Email actuel: {settingsCurrentEmail || 'Non défini'}
+                    </p>
+                    {!!pendingEmail && (
+                      <p style={{ margin:'4px 0 0', fontSize:'0.73rem', color:'#f59e0b', fontWeight:'700' }}>
+                        En attente de vérification: {pendingEmail}
+                      </p>
+                    )}
                   </div>
+
                   <div>
-                    <label className="pro-label"><I.lock width="12" height="12" style={{color:'#ea580c'}}/>Mot de passe</label>
-                    <input type="password" placeholder="Nouveau mot de passe" className="pro-input" style={{marginBottom:'8px'}}/>
-                    <input type="password" placeholder="Confirmer" className="pro-input" />
+                    <label className="pro-label"><I.lock width="12" height="12" style={{color:'#ea580c'}}/>Mot de passe actuel (sécurité)</label>
+                    <input
+                      type="password"
+                      placeholder="Mot de passe actuel"
+                      className="pro-input"
+                      style={{marginBottom:'8px'}}
+                      value={settingsForm.currentPassword}
+                      onChange={e => setSettingsForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    />
+
+                    <label className="pro-label" style={{ marginTop:'2px' }}><I.lock width="12" height="12" style={{color:'#ea580c'}}/>Nouveau mot de passe</label>
+                    <input
+                      type="password"
+                      placeholder="Nouveau mot de passe"
+                      className="pro-input"
+                      style={{marginBottom:'8px'}}
+                      value={settingsForm.newPassword}
+                      onChange={e => setSettingsForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirmer le nouveau mot de passe"
+                      className="pro-input"
+                      value={settingsForm.confirmPassword}
+                      onChange={e => setSettingsForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    />
                   </div>
-                  <button className="save-btn" style={{ width:'auto', alignSelf:'flex-start', padding:'10px 20px', borderRadius:'10px' }} onClick={()=>{setIsSettingsOpen(false);showToast('Paramètres sauvegardés');}}>
-                    <I.check width="14" height="14"/> Enregistrer
+
+                  {!!pendingEmail && (
+                    <div style={{ padding:'14px', border:`1px solid ${borderStrong}`, borderRadius:'14px', background:surface }}>
+                      <label className="pro-label"><I.check width="12" height="12" style={{color:'#22c55e'}}/>Token de vérification email</label>
+                      <input
+                        type="text"
+                        className="pro-input"
+                        placeholder="Colle le token reçu par email"
+                        value={settingsForm.verifyToken}
+                        onChange={e => setSettingsForm(prev => ({ ...prev, verifyToken: e.target.value }))}
+                        style={{marginBottom:'10px'}}
+                      />
+                      <button
+                        className="save-btn"
+                        style={{ width:'auto', padding:'9px 16px', borderRadius:'10px' }}
+                        onClick={verifyPendingEmail}
+                        disabled={isSettingsSaving}
+                      >
+                        <I.check width="14" height="14"/> Vérifier l'email
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    className="save-btn"
+                    style={{ width:'auto', alignSelf:'flex-start', padding:'10px 20px', borderRadius:'10px', opacity: isSettingsSaving ? 0.7 : 1 }}
+                    onClick={saveSettings}
+                    disabled={isSettingsSaving || isSettingsLoading}
+                  >
+                    <I.check width="14" height="14"/> {isSettingsSaving ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
                 </div>
               )}
@@ -1294,6 +2612,14 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                       <div className={`toggle ${toggles[key]?'on':''}`} onClick={()=>setToggles(t=>({...t,[key]:!t[key]}))}><div className="toggle-knob"/></div>
                     </div>
                   ))}
+                  <button
+                    className="save-btn"
+                    style={{ width:'auto', alignSelf:'flex-start', padding:'10px 20px', borderRadius:'10px', opacity: isSettingsSaving ? 0.7 : 1 }}
+                    onClick={saveSettings}
+                    disabled={isSettingsSaving || isSettingsLoading}
+                  >
+                    <I.check width="14" height="14"/> {isSettingsSaving ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
                 </div>
               )}
               {settingsTab==='notifications' && (
@@ -1304,6 +2630,14 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                       <div className={`toggle ${toggles[key]?'on':''}`} onClick={()=>setToggles(t=>({...t,[key]:!t[key]}))}><div className="toggle-knob"/></div>
                     </div>
                   ))}
+                  <button
+                    className="save-btn"
+                    style={{ width:'auto', alignSelf:'flex-start', padding:'10px 20px', borderRadius:'10px', opacity: isSettingsSaving ? 0.7 : 1 }}
+                    onClick={saveSettings}
+                    disabled={isSettingsSaving || isSettingsLoading}
+                  >
+                    <I.check width="14" height="14"/> {isSettingsSaving ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
                 </div>
               )}
             </div>
@@ -1474,8 +2808,18 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                 <textarea rows="4" className="pro-input" value={newAdData.description} onChange={e=>setNewAdData(p=>({...p,description:e.target.value}))} placeholder="Superficie, étage, quartier, transports à proximité..." style={{ resize:'vertical', minHeight:'90px', display:'block' }}></textarea>
               </div>
 
-              <button className="save-btn" onClick={handlePublishAd}>
-                {editingAdId ? <><I.check width="16" height="16"/> Enregistrer</> : <><I.send width="16" height="16"/> Publier l'annonce</>}
+              <button
+                className="save-btn"
+                onClick={handlePublishAd}
+                disabled={isPublishing}
+                style={{ opacity: isPublishing ? 0.7 : 1, cursor: isPublishing ? 'not-allowed' : 'pointer' }}
+              >
+                {isPublishing
+                  ? <><I.upload width="16" height="16"/> {editingAdId ? 'Enregistrement...' : 'Publication...'}</>
+                  : editingAdId
+                    ? <><I.check width="16" height="16"/> Enregistrer</>
+                    : <><I.send width="16" height="16"/> Publier l'annonce</>
+                }
               </button>
             </div>
           </div>
@@ -1501,7 +2845,9 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                       </div>
                       <div>
                         <div style={{ fontWeight:'800', color:text, fontSize:'0.88rem' }}>{activeChat.name}</div>
-                        <div style={{ fontSize:'0.7rem', color: activeChat.isOnline?'#22c55e':textMuted, fontWeight:'600' }}>{activeChat.isOnline?'En ligne':'Hors ligne'}</div>
+                        <div style={{ fontSize:'0.7rem', color: activeChat.isOnline?'#22c55e':textMuted, fontWeight:'600' }}>
+                          {activeChat.isOnline ? 'En ligne' : formatLastSeen(activeChat.lastSeen)}
+                        </div>
                       </div>
                     </div>
                   : <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
@@ -1546,14 +2892,52 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                       <p style={{ margin:0, fontSize:'0.8rem', fontWeight:'600' }}>Dis bonjour à {activeChat.name}</p>
                     </div>
                   )}
-                  {activeChat.messages.map((msg,idx)=>(
-                    <div key={idx} style={{ display:'flex', flexDirection:'column', alignItems:msg.sender==='me'?'flex-end':'flex-start' }}>
-                      <div className={`msg-bubble ${msg.sender==='me'?'msg-me':'msg-them'}`}>{msg.text}</div>
-                      <span style={{ fontSize:'0.66rem', color:textMuted, marginTop:'3px', padding:'0 2px' }}>{msg.time}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    const lastOutgoingIdx = [...activeChat.messages]
+                      .map((m, i) => (m.sender === 'me' ? i : -1))
+                      .reduce((a, b) => Math.max(a, b), -1);
+
+                    return activeChat.messages.map((msg, idx) => {
+                      const showSeen = idx === lastOutgoingIdx;
+                      return (
+                        <div key={msg.id || idx} style={{ display:'flex', flexDirection:'column', alignItems:msg.sender==='me'?'flex-end':'flex-start' }}>
+                          <div className={`msg-bubble ${msg.sender==='me'?'msg-me':'msg-them'}`} style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                            {msg.imageUrl && (
+                              <img
+                                src={msg.imageUrl}
+                                alt="shared"
+                                onClick={() => setZoomedImage(msg.imageUrl)}
+                                style={{ maxWidth:'100%', maxHeight:'300px', borderRadius:'12px', objectFit:'cover', cursor:'zoom-in' }}
+                                title="Cliquer pour agrandir"
+                              />
+                            )}
+                            {msg.text && <span>{msg.text}</span>}
+                          </div>
+                          <span style={{ fontSize:'0.66rem', color:textMuted, marginTop:'3px', padding:'0 2px' }}>
+                            {msg.time}
+                            {showSeen ? ` · ${msg.isRead ? 'Vu' : 'Envoye'}` : ''}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
                   <div ref={messagesEndRef} />
                 </div>
+                {previewImage && (
+                  <div style={{ padding:'8px 13px', borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'flex-end' }}>
+                    <div style={{ position:'relative', display:'flex' }}>
+                      <img
+                        src={previewImage}
+                        alt="preview"
+                        onClick={() => setZoomedImage(previewImage)}
+                        style={{ width:'60px', height:'60px', borderRadius:'8px', objectFit:'cover', cursor:'zoom-in' }}
+                        title="Cliquer pour agrandir"
+                      />
+                      <button onClick={() => { setPreviewImage(null); setSelectedImage(null); }} style={{ position:'absolute', top:'-8px', right:'-8px', background:'#ef4444', color:'white', border:'none', width:'24px', height:'24px', borderRadius:'50%', cursor:'pointer', display:'flex', justifyContent:'center', alignItems:'center', fontSize:'14px', fontWeight:'bold' }}>×</button>
+                    </div>
+                    <span style={{ fontSize:'0.8rem', color:textMuted }}>Image prête à envoyer</span>
+                  </div>
+                )}
                 <div style={{ padding:'11px 13px', borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center' }}>
                   <input type="text" placeholder={`Message à ${activeChat.name}...`} value={newMessage}
                     onChange={e=>setNewMessage(e.target.value)}
@@ -1561,13 +2945,29 @@ console.log("✅ realUsers li wjdat l-karta:", realUsers);
                     style={{ flex:1, padding:'10px 14px', border:`1.5px solid ${borderStrong}`, borderRadius:'50px', outline:'none', color:text, backgroundColor:darkMode?'rgba(255,255,255,0.06)':'white', fontSize:'0.84rem', fontFamily:'inherit', transition:'border-color 0.2s' }}
                     onFocus={e=>e.target.style.borderColor='#ea580c'}
                     onBlur={e=>e.target.style.borderColor=borderStrong} />
-                  <button onClick={sendMessage} disabled={!newMessage.trim()}
-                    style={{ background:newMessage.trim()?'linear-gradient(135deg,#ea580c,#f97316)':'#e2e8f0', color:newMessage.trim()?'white':'#94a3b8', border:'none', width:'38px', height:'38px', borderRadius:'50%', cursor:newMessage.trim()?'pointer':'default', display:'flex', justifyContent:'center', alignItems:'center', transition:'all 0.25s', flexShrink:0, boxShadow:newMessage.trim()?'0 4px 12px rgba(234,88,12,0.35)':'none' }}>
+                  <label style={{ cursor:'pointer', display:'flex', justifyContent:'center', alignItems:'center', width:'38px', height:'38px', borderRadius:'50%', background:previewImage?'linear-gradient(135deg,#ea580c,#f97316)':'#e2e8f0', color:previewImage?'white':'#94a3b8', transition:'all 0.25s', flexShrink:0 }} title="Ajouter une image">
+                    <I.image width="14" height="14" />
+                    <input type="file" accept="image/*" onChange={handleImageSelect} style={{ display:'none' }} disabled={isUploadingImage} />
+                  </label>
+                  <button onClick={sendMessage} disabled={(!newMessage.trim() && !previewImage) || isSendingMessage || isUploadingImage}
+                    style={{ background:(newMessage.trim() || previewImage) && !isSendingMessage && !isUploadingImage?'linear-gradient(135deg,#ea580c,#f97316)':'#e2e8f0', color:(newMessage.trim() || previewImage) && !isSendingMessage && !isUploadingImage?'white':'#94a3b8', border:'none', width:'38px', height:'38px', borderRadius:'50%', cursor:(newMessage.trim() || previewImage) && !isSendingMessage && !isUploadingImage?'pointer':'default', display:'flex', justifyContent:'center', alignItems:'center', transition:'all 0.25s', flexShrink:0, boxShadow:(newMessage.trim() || previewImage) && !isSendingMessage && !isUploadingImage?'0 4px 12px rgba(234,88,12,0.35)':'none' }}>
                     <I.send width="14" height="14"/>
                   </button>
                 </div>
               </>
-            ) : null}
+            ) : (
+              <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:textMuted, gap:'10px', padding:'20px' }}>
+                <I.info width="24" height="24" style={{ color:'#94a3b8' }} />
+                <p style={{ margin:0, fontSize:'0.82rem', fontWeight:'600', textAlign:'center' }}>Cette conversation n'est pas encore chargée.</p>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setActiveConvId(null)}
+                  style={{ marginTop:'4px' }}
+                >
+                  <I.arrow width="12" height="12" /> Retour aux conversations
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

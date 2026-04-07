@@ -10,6 +10,43 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     match: [/^\S+@\S+\.\S+$/, 'Email invalide'],
   },
+  pendingEmail: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Email invalide'],
+    default: null,
+  },
+  emailChangeToken: {
+    type: String,
+    select: false,
+    default: null,
+  },
+  emailChangeTokenExpires: {
+    type: Date,
+    select: false,
+    default: null,
+  },
+  emailVerifyToken: {
+    type: String,
+    select: false,
+    default: null,
+  },
+  emailVerifyTokenExpires: {
+    type: Date,
+    select: false,
+    default: null,
+  },
+  passwordResetToken: {
+    type: String,
+    select: false,
+    default: null,
+  },
+  passwordResetTokenExpires: {
+    type: Date,
+    select: false,
+    default: null,
+  },
   password: {
     type: String,
     minlength: [6, 'Minimum 6 caractères'],
@@ -44,6 +81,10 @@ const UserSchema = new mongoose.Schema({
     smokingOk:   { type: Boolean, default: false },
     petsOk:      { type: Boolean, default: false },
     visitorsOk:  { type: Boolean, default: true },
+    hidePhone:   { type: Boolean, default: false },
+    onlineStatus:{ type: Boolean, default: true },
+    emailAlerts: { type: Boolean, default: true },
+    darkMode:    { type: Boolean, default: false },
   },
 
   // ── Favoris (annonces) ────────────────────────────

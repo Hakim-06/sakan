@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login  from './pages/Login';
 import Profil from './pages/Profil';
 import Feed   from './pages/Feed';
+import Contact from './pages/Contact';
 
 // -- Route protegee: besoin token
 const PrivateRoute = ({ children }) => {
@@ -35,6 +36,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login"  element={<Login />} />
+        <Route path="/contact" element={<Contact />} />
 
         {/* Profil setup */}
         <Route path="/profil" element={<ProfilRoute />} />

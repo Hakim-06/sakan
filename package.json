@@ -1,0 +1,15 @@
+{
+  "name": "sakan-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix ./sakan-backend run dev\" \"npm --prefix ./sakancampus run dev\"",
+    "dev:backend": "npm --prefix ./sakan-backend run dev",
+    "dev:frontend": "npm --prefix ./sakancampus run dev",
+    "dev:all": "concurrently \"npm --prefix ./sakan-backend run dev\" \"npm --prefix ./sakancampus run dev\"",
+    "start": "npm --prefix ./sakan-backend run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
