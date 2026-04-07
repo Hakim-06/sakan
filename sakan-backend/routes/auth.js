@@ -79,20 +79,44 @@ router.post('/register', registerRules, async (req, res) => {
 
     const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
     const verifyUrl = `${frontendUrl}/login?verifyToken=${rawToken}`;
-    const mailResult = await sendEmail({
-      to: email,
-      subject: 'Vérifie ton email - SakanCampus',
-      text: `Confirme ton compte via ce lien: ${verifyUrl}`,
-      html: `
-        <p>Bonjour ${name},</p>
-        <p>Bienvenue sur SakanCampus. Clique sur ce lien pour vérifier ton email:</p>
-        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-        <p>Ce lien expire dans 24 heures.</p>
-      `,
-    });
+    let mailResult = { sent: false, reason: 'unknown' };
+    try {
+      mailResult = await sendEmail({
+        to: email,
+        subject: 'Vérifie ton email - SakanCampus',
+        text: `Confirme ton compte via ce lien: ${verifyUrl}`,
+        html: `
+          <p>Bonjour ${name},</p>
+          <p>Bienvenue sur SakanCampus. Clique sur ce lien pour vérifier ton email:</p>
+          <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+          <p>Ce lien expire dans 24 heures.</p>
+        `,
+      });
+    } catch (mailErr) {
+      console.error('REGISTER EMAIL ERROR:', mailErr?.message || mailErr);
+      mailResult = { sent: false, reason: mailErr?.message || 'smtp error' };
+    }
 
-    if (!mailResult.sent && process.env.NODE_ENV === 'production') {
-      return res.status(503).json({ success: false, message: 'Service email indisponible. Réessaie plus tard.' });
+    if (!mailResult.sent) {
+      user.isVerified = true;
+      user.emailVerifyToken = null;
+      user.emailVerifyTokenExpires = null;
+      await user.save({ validateBeforeSave: false });
+
+      const token = generateToken(user._id);
+      return res.status(201).json({
+        success: true,
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          photo: user.photo,
+          profileComplete: user.profileComplete,
+        },
+        requiresEmailVerification: false,
+        message: 'Compte créé. Vérification email indisponible, accès activé directement.',
+      });
     }
 
     const response = {
@@ -101,11 +125,6 @@ router.post('/register', registerRules, async (req, res) => {
       requiresEmailVerification: true,
       expiresAt,
     };
-
-    if (!mailResult.sent && process.env.NODE_ENV !== 'production') {
-      response.devVerifyToken = rawToken;
-      response.message = 'Compte créé (mode dev). Utilise le token de vérification affiché pour activer le compte.';
-    }
 
     return res.status(201).json(response);
 
