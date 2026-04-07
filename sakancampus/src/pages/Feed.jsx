@@ -1431,16 +1431,67 @@ export default function Feed() {
       setIsPublishing(true);
       let uploadedPhotos = [];
 
+      const blobToJpeg = async (blob) => {
+        if (!(blob instanceof Blob) || !blob.type.startsWith('image/')) return blob;
+
+        const sourceUrl = URL.createObjectURL(blob);
+        try {
+          const img = await new Promise((resolve, reject) => {
+            const el = new Image();
+            el.onload = () => resolve(el);
+            el.onerror = reject;
+            el.src = sourceUrl;
+          });
+
+          const maxSide = 1400;
+          const ratio = Math.min(1, maxSide / Math.max(img.width || 1, img.height || 1));
+          const width = Math.max(1, Math.round((img.width || 1) * ratio));
+          const height = Math.max(1, Math.round((img.height || 1) * ratio));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return blob;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let quality = 0.82;
+          let out = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+          while (out && out.size > 700 * 1024 && quality > 0.46) {
+            quality -= 0.1;
+            out = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+          }
+
+          return out || blob;
+        } finally {
+          URL.revokeObjectURL(sourceUrl);
+        }
+      };
+
       // ── ÉTAPE 1: Upload photos vers Cloudinary ──
       if (newAdData.images && newAdData.images.length > 0) {
         const formData = new FormData();
-        await Promise.all(newAdData.images.map(async (imgUrl, i) => {
-          try {
-            const blob = await fetch(imgUrl).then(r => r.blob());
-            const file = new File([blob], `photo_${i}.jpg`, { type: blob.type || 'image/jpeg' });
-            formData.append('photos', file);
-          } catch (_) {}
-        }));
+        let totalBytes = 0;
+        let filesCount = 0;
+
+        for (let i = 0; i < newAdData.images.length; i += 1) {
+          const imgUrl = newAdData.images[i];
+          const rawBlob = await fetch(imgUrl).then(r => r.blob());
+          const optimizedBlob = await blobToJpeg(rawBlob);
+
+          totalBytes += optimizedBlob.size;
+          if (totalBytes > 4 * 1024 * 1024) {
+            throw new Error('Tsawer kbar بزاف. N9ess photos wla size dyalhom.');
+          }
+
+          const file = new File([optimizedBlob], `photo_${i}.jpg`, { type: 'image/jpeg' });
+          formData.append('photos', file);
+          filesCount += 1;
+        }
+
+        if (filesCount === 0) {
+          throw new Error('Ma kaynach tswira valid bach ttsift.');
+        }
 
         const uploadRes  = await fetch('/api/upload/annonce', {
           method: 'POST',
