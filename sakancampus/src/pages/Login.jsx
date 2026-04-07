@@ -339,10 +339,10 @@ export default function Login() {
           body,html{overflow:auto;background:#f8fafc}
           .sc-login-root{height:auto!important;min-height:100vh!important;overflow:visible!important}
           .sc-left-panel{display:none!important}
-          .sc-right-panel{width:100%!important;min-height:100vh!important;padding:14px!important;align-items:flex-start!important}
+          .sc-right-panel{width:100%!important;min-height:100vh!important;padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px))!important;align-items:flex-start!important;background:linear-gradient(180deg,#f8fafc,#eef2f7)!important}
           .sc-login-shell{max-width:560px!important;margin:18px auto 26px!important}
           .sc-tab-switch{margin-bottom:18px!important}
-          .sc-login-card{padding:24px 18px!important;border-radius:18px!important}
+          .sc-login-card{padding:22px 16px!important;border-radius:18px!important;box-shadow:0 10px 30px rgba(15,23,42,0.08)!important}
         }
       `}</style>
 

@@ -1797,6 +1797,7 @@ export default function Feed() {
   const hasPriceFilter = !!priceMin || !!priceMax;
   const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
   const isMobile = isAiCompactMobile;
+  const mobileBottomInset = 'calc(86px + env(safe-area-inset-bottom, 0px))';
   const contactCanSubmit =
     contactForm.name.trim().length >= 2 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactForm.email.trim()) &&
@@ -1981,7 +1982,7 @@ export default function Feed() {
         position:fixed;
         left:10px;
         right:10px;
-        bottom:10px;
+        bottom:calc(10px + env(safe-area-inset-bottom, 0px));
         z-index:1400;
         display:grid;
         grid-template-columns:repeat(5,minmax(0,1fr));
@@ -2013,6 +2014,17 @@ export default function Feed() {
         background:${darkMode?'rgba(234,88,12,0.18)':'#fff7ed'};
         color:#ea580c;
       }
+      .mobile-bottom-item.active::after{
+        content:'';
+        position:absolute;
+        bottom:2px;
+        left:50%;
+        width:16px;
+        height:3px;
+        transform:translateX(-50%);
+        border-radius:999px;
+        background:#ea580c;
+      }
       .mobile-bottom-badge{
         position:absolute;
         top:4px;
@@ -2029,6 +2041,28 @@ export default function Feed() {
         padding:0 5px;
         font-weight:900;
       }
+      .mobile-strip{
+        margin:8px 12px 0;
+        border:1px solid ${borderStrong};
+        background:${darkMode?'linear-gradient(135deg,#1e293b,#0f172a)':'linear-gradient(135deg,#fff7ed,#ffffff)'};
+        border-radius:14px;
+        padding:10px;
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:8px;
+      }
+      .mobile-strip .k{
+        font-size:0.62rem;
+        color:${textMuted};
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:0.4px;
+      }
+      .mobile-strip .v{
+        font-size:0.88rem;
+        color:${text};
+        font-weight:900;
+      }
     }
   `;
 
@@ -2038,7 +2072,7 @@ export default function Feed() {
   if (!isLoggedIn) return null;
 
   return (
-    <div style={{ background:bg, color:text, minHeight:'100vh', width:'100%', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflowX:'hidden', transition:'background 0.4s,color 0.3s', paddingBottom:isMobile?'86px':'0' }}>
+    <div style={{ background:bg, color:text, minHeight:'100vh', width:'100%', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflowX:'hidden', transition:'background 0.4s,color 0.3s', paddingBottom:isMobile?mobileBottomInset:'0' }}>
       <Toast toasts={toasts} />
       <style>{css}</style>
 
@@ -2054,11 +2088,12 @@ export default function Feed() {
             <I.home width="18" height="18" style={{ color:'white' }} />
           </div>
           {!isMobile && <h2 style={{ margin:0, color:text, fontSize:'1.18rem', fontWeight:'900', letterSpacing:'-0.5px' }}>Sakan<span style={{ color:'#ea580c' }}>Campus</span></h2>}
+          {isMobile && <h2 style={{ margin:0, color:text, fontSize:'0.95rem', fontWeight:'900', letterSpacing:'-0.2px' }}>Sakan<span style={{ color:'#ea580c' }}>Campus</span></h2>}
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:isMobile?'6px':'10px' }}>
-          <button className="publish-btn" onClick={() => setIsCreateAdOpen(true)}>
-            <I.plus width="14" height="14" /> {isMobile ? 'Publier' : 'Publier'}
+          <button className="publish-btn" onClick={() => setIsCreateAdOpen(true)} style={isMobile ? { padding:'8px 10px', borderRadius:'12px' } : undefined}>
+            <I.plus width="14" height="14" /> {isMobile ? 'New' : 'Publier'}
           </button>
           {/* MESSAGES */}
           <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); fetchConversations(); }}>
@@ -2131,6 +2166,23 @@ export default function Feed() {
           ))}
         </div>
       </div>}
+
+      {isMobile && (
+        <div className="mobile-strip">
+          <div>
+            <div className="k">Annonces</div>
+            <div className="v">{filteredToutes.length}</div>
+          </div>
+          <div>
+            <div className="k">Matching</div>
+            <div className="v">{filteredMatching.length}</div>
+          </div>
+          <div>
+            <div className="k">Messages</div>
+            <div className="v">{totalUnread}</div>
+          </div>
+        </div>
+      )}
 
       {/* ── HEADER ── */}
       <div className="tab-animate" style={{ padding:isMobile?'0 12px':'0 5%', margin:isMobile?'16px 0 8px':'32px 0 10px', textAlign:'center', zIndex:950, position:'relative' }}>
@@ -2409,7 +2461,7 @@ export default function Feed() {
       )}
 
       {/* AI ASSISTANT */}
-      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?'86px':'20px', zIndex:1200 }}>
+      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?'calc(86px + env(safe-area-inset-bottom, 0px))':'20px', zIndex:1200 }}>
         {isAiOpen && (
           <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', marginBottom:isAiCompactMobile?'6px':'10px', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:isAiCompactMobile?'fixed':'relative', right:isAiCompactMobile?'6px':undefined, bottom:isAiCompactMobile?'6px':undefined }}>
             <div style={{ padding:'12px 14px', borderBottom:`1px solid ${border}`, background:darkMode?'linear-gradient(135deg,rgba(30,41,59,0.85),rgba(15,23,42,0.92))':'linear-gradient(135deg,#fff7ed,#ffffff)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
