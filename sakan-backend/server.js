@@ -21,7 +21,9 @@ const buildAllowedOrigins = () => {
 const allowedOrigins = buildAllowedOrigins();
 
 // ─── Connect Database ────────────────────────────────
-connectDB();
+connectDB().catch((error) => {
+  console.error('MongoDB startup connection failed:', error.message);
+});
 
 // ─── Security Middleware ─────────────────────────────
 app.use(helmet());
