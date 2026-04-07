@@ -25,6 +25,16 @@ connectDB().catch((error) => {
   console.error('MongoDB startup connection failed:', error.message);
 });
 
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('MongoDB request connection failed:', error.message);
+    res.status(500).json({ success: false, message: 'Database temporarily unavailable.' });
+  }
+});
+
 // ─── Security Middleware ─────────────────────────────
 app.use(helmet());
 app.use(cors({
