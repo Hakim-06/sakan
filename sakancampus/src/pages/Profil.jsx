@@ -96,6 +96,13 @@ const IArrow = () => (
 // 2. L-COMPOSANT DYALK KAY-BDA HNA 👇
 export default function Profil() {
   const navigate = useNavigate();
+  const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth <= 900 : false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobileView(window.innerWidth <= 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   
   // Les variables dyalk (States)
   const [name, setName] = useState('');
@@ -265,7 +272,7 @@ export default function Profil() {
   
 
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#f8fafc 0%,#eef2f7 100%)', fontFamily:"'DM Sans','Segoe UI',sans-serif", display:'flex', flexDirection:'column', alignItems:'center', padding:'36px 20px 60px' }}>
+    <div className="pr-page" style={{ minHeight:'100vh', background:'linear-gradient(135deg,#f8fafc 0%,#eef2f7 100%)', fontFamily:"'DM Sans','Segoe UI',sans-serif", display:'flex', flexDirection:'column', alignItems:'center', padding:isMobileView?'16px 10px 28px':'36px 20px 60px' }}>
       <style>{`
         *{box-sizing:border-box}
         body,html{margin:0!important;padding:0!important}
@@ -288,10 +295,21 @@ export default function Profil() {
         input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#ea580c;border:3px solid white;box-shadow:0 2px 8px rgba(234,88,12,0.4);cursor:pointer;transition:transform 0.15s}
         input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
         input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#ea580c;border:3px solid white;cursor:pointer}
+        @media (max-width:900px){
+          .pr-page{padding:20px 12px 36px!important}
+          .pr-topbar{margin-bottom:16px!important}
+          .pr-title{font-size:1.75rem!important;line-height:1.2!important;margin-top:14px!important}
+          .pr-main-card{grid-template-columns:1fr!important;border-radius:18px!important}
+          .pr-left-panel{min-height:auto!important;padding:22px 16px!important;gap:16px!important}
+          .pr-right-form{padding:20px 16px!important;max-height:none!important;overflow:visible!important}
+          .pr-row-name-age,.pr-row-gender-city{grid-template-columns:1fr!important;gap:12px!important}
+          .pr-completion{width:100%;justify-content:flex-start}
+          .pr-bio-head{flex-direction:column;align-items:flex-start!important;gap:8px}
+        }
       `}</style>
 
       {/* ── TOP BAR ── */}
-      <div style={{ width:'100%', maxWidth:'840px', marginBottom:'28px', animation:'fadeUp 0.4s ease' }}>
+      <div className="pr-topbar" style={{ width:'100%', maxWidth:'840px', marginBottom:isMobileView?'14px':'28px', animation:'fadeUp 0.4s ease' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'16px' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
             <div style={{ width:'40px', height:'40px', background:'linear-gradient(135deg,#ea580c,#f97316)', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 14px rgba(234,88,12,0.35)' }}>
@@ -299,7 +317,7 @@ export default function Profil() {
             </div>
             <span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:'1.15rem', fontWeight:'900', color:'#0f172a', letterSpacing:'-0.3px' }}>Sakan<span style={{ color:'#ea580c' }}>Campus</span></span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+          <div className="pr-completion" style={{ display:'flex', alignItems:'center', gap:'10px' }}>
             <span style={{ fontSize:'0.8rem', color:'#64748b', fontWeight:'600' }}>Complétion</span>
             <div style={{ width:'100px', height:'7px', background:'#e2e8f0', borderRadius:'99px', overflow:'hidden' }}>
               <div style={{ height:'100%', width:`${pct}%`, background:`linear-gradient(90deg,${pctColor},${pctColor}bb)`, borderRadius:'99px', transition:'width 0.5s cubic-bezier(0.16,1,0.3,1)' }} />
@@ -308,7 +326,7 @@ export default function Profil() {
           </div>
         </div>
 
-        <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:'2.4rem', fontWeight:'800', color:'#0f172a', margin:'20px 0 6px', letterSpacing:'-0.8px', lineHeight:1.15 }}>
+        <h1 className="pr-title" style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:isMobileView?'2rem':'2.4rem', fontWeight:'800', color:'#0f172a', margin:isMobileView?'14px 0 6px':'20px 0 6px', letterSpacing:'-0.8px', lineHeight:1.15 }}>
           Créez votre{' '}
           <span style={{ backgroundImage:'linear-gradient(90deg,#ea580c,#f97316)', backgroundSize:'200% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'shimmer 3s linear infinite' }}>profil</span>
         </h1>
@@ -316,10 +334,10 @@ export default function Profil() {
       </div>
 
       {/* ── MAIN CARD ── */}
-      <div style={{ width:'100%', maxWidth:'840px', background:'white', borderRadius:'28px', border:'1px solid #e8edf3', boxShadow:'0 16px 50px rgba(15,23,42,0.08)', overflow:'hidden', display:'grid', gridTemplateColumns:'280px 1fr', animation:'fadeUp 0.5s 0.1s ease both' }}>
+      <div className="pr-main-card" style={{ width:'100%', maxWidth:'840px', background:'white', borderRadius:isMobileView?'18px':'28px', border:'1px solid #e8edf3', boxShadow:'0 16px 50px rgba(15,23,42,0.08)', overflow:'hidden', display:'grid', gridTemplateColumns:isMobileView?'1fr':'280px 1fr', animation:'fadeUp 0.5s 0.1s ease both' }}>
 
         {/* ── LEFT PANEL ── */}
-        <div style={{ background:'linear-gradient(160deg,#0f172a 0%,#1e2944 100%)', padding:'36px 28px', display:'flex', flexDirection:'column', gap:'22px', minHeight:'600px' }}>
+        {!isMobileView && <div className="pr-left-panel" style={{ background:'linear-gradient(160deg,#0f172a 0%,#1e2944 100%)', padding:'36px 28px', display:'flex', flexDirection:'column', gap:'22px', minHeight:'600px' }}>
 
           {/* PHOTO */}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'10px' }}>
@@ -383,13 +401,13 @@ export default function Profil() {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* ── RIGHT FORM ── */}
-        <div style={{ padding:'36px 32px', overflowY:'auto', maxHeight:'90vh' }}>
+        <div className="pr-right-form" style={{ padding:isMobileView?'18px 12px':'36px 32px', overflowY:'auto', maxHeight:isMobileView?'none':'90vh' }}>
 
           {/* NOM + AGE */}
-          <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap:'14px', marginBottom:'18px' }}>
+          <div className="pr-row-name-age" style={{ display:'grid', gridTemplateColumns:isMobileView?'1fr':'1.6fr 1fr', gap:'14px', marginBottom:'18px' }}>
             <div>
               <label style={{ fontSize:'0.74rem', fontWeight:'800', color:'#475569', marginBottom:'8px', display:'flex', alignItems:'center', gap:'6px', textTransform:'uppercase', letterSpacing:'0.5px' }}>
                 <span style={{ color:'#ea580c' }}><IUser /></span> Prénom *
@@ -425,7 +443,7 @@ export default function Profil() {
           </div>
 
           {/* GENDER + VILLE */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px', marginBottom:'18px' }}>
+          <div className="pr-row-gender-city" style={{ display:'grid', gridTemplateColumns:isMobileView?'1fr':'1fr 1fr', gap:'14px', marginBottom:'18px' }}>
             <div>
               <label style={{ fontSize:'0.74rem', fontWeight:'800', color:'#475569', marginBottom:'8px', display:'block', textTransform:'uppercase', letterSpacing:'0.5px' }}>Je suis</label>
               <div style={{ display:'flex', gap:'8px' }}>
@@ -482,7 +500,7 @@ export default function Profil() {
 
           {/* TAGS */}
           <div style={{ marginBottom:'18px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+            <div className="pr-bio-head" style={{ display:'flex', flexDirection:isMobileView?'column':'row', justifyContent:'space-between', alignItems:isMobileView?'flex-start':'center', marginBottom:'10px', gap:isMobileView?'8px':'0' }}>
               <label style={{ fontSize:'0.74rem', fontWeight:'800', color:'#475569', textTransform:'uppercase', letterSpacing:'0.5px', display:'flex', alignItems:'center', gap:'6px' }}>
                 <span style={{ color:'#ea580c' }}><IStar /></span> Mes traits
               </label>
