@@ -12,6 +12,8 @@ export default function Login() {
   const [resetPwd, setResetPwd] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [info, setInfo] = useState('');
   const [focused, setFocused] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -143,7 +145,7 @@ export default function Login() {
     try {
       const targetEmail = pendingVerificationEmail || email.trim().toLowerCase();
       if (!targetEmail) {
-        throw new Error('Saisis ton email pour recevoir un nouveau lien de vérification.');
+        throw new Error('Saisis ton email pour recevoir un nouveau code de vérification.');
       }
 
       const res = await fetch('/api/auth/resend-verification', {
@@ -158,15 +160,58 @@ export default function Login() {
         : {};
 
       if (!res.ok) {
-        throw new Error(data.message || 'Impossible d\'envoyer un nouveau lien de vérification.');
+        throw new Error(data.message || 'Impossible d\'envoyer un nouveau code de vérification.');
       }
 
-      setInfo(data.message || 'Nouveau lien de vérification envoyé.');
-      if (data.devVerifyToken) {
-        setInfo(`Mode dev: nouveau token reçu. Ouvre /login?verifyToken=${data.devVerifyToken}`);
+      setInfo(data.message || 'Nouveau code de vérification envoyé.');
+      if (data.devVerificationCode) {
+        setVerificationCode(String(data.devVerificationCode));
+        setInfo(`Mode dev: code de vérification = ${data.devVerificationCode}`);
       }
     } catch (err) {
-      setError(err.message || 'Erreur lors de l\'envoi du lien de vérification.');
+      setError(err.message || 'Erreur lors de l\'envoi du code de vérification.');
+    }
+  };
+
+  const submitEmailVerificationCode = async () => {
+    setError('');
+    setInfo('');
+
+    try {
+      const targetEmail = (pendingVerificationEmail || email || '').trim().toLowerCase();
+      const code = verificationCode.trim();
+
+      if (!targetEmail) {
+        throw new Error('Email manquant. Recommence l\'inscription.');
+      }
+      if (code.length !== 6) {
+        throw new Error('Entre un code à 6 chiffres.');
+      }
+
+      setIsVerifyingCode(true);
+      const res = await fetch('/api/auth/verify-email-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail, code }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await res.json().catch(() => ({}))
+        : {};
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Vérification du code impossible.');
+      }
+
+      setInfo(data.message || 'Email vérifié. Tu peux te connecter.');
+      setPendingVerificationEmail('');
+      setVerificationCode('');
+      setMode('login');
+    } catch (err) {
+      setError(err.message || 'Erreur lors de la vérification du code.');
+    } finally {
+      setIsVerifyingCode(false);
     }
   };
 
@@ -253,10 +298,13 @@ export default function Login() {
       if (!data.success) throw new Error(data.message || 'Erreur');
       if (mode === 'register') {
         if (data.requiresEmailVerification) {
-          setPendingVerificationEmail(email.trim().toLowerCase());
-          setInfo(data.message || 'Compte créé. Vérifie ton email pour activer l\'accès.');
-          if (data.devVerifyToken) {
-            setInfo(`Mode dev: token de vérification reçu. Ouvre /login?verifyToken=${data.devVerifyToken}`);
+          const normalizedEmail = email.trim().toLowerCase();
+          setPendingVerificationEmail(normalizedEmail);
+          setEmail(normalizedEmail);
+          setInfo(data.message || 'Compte créé. Entre le code reçu par email pour activer l\'accès.');
+          if (data.devVerificationCode) {
+            setVerificationCode(String(data.devVerificationCode));
+            setInfo(`Mode dev: code de vérification = ${data.devVerificationCode}`);
           }
           setMode('login');
           setPassword('');
@@ -531,14 +579,38 @@ export default function Login() {
               )}
 
               {mode === 'login' && pendingVerificationEmail && (
-                <div style={{ textAlign:'right', marginTop:'-8px' }}>
-                  <button
-                    type="button"
-                    onClick={requestVerificationResend}
-                    style={{ fontSize:'0.8rem', color:'#1d4ed8', cursor:'pointer', fontWeight:'700', border:'none', background:'transparent', padding:0, fontFamily:'inherit' }}
-                  >
-                    Renvoyer l'email de vérification
-                  </button>
+                <div style={{ marginTop:'-4px', background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:'10px', padding:'10px', display:'grid', gap:'8px' }}>
+                  <div style={{ fontSize:'0.8rem', color:'#1e40af', fontWeight:'700' }}>
+                    Vérifie ton compte ({pendingVerificationEmail}) avec le code reçu par email
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    className="sc-placeholder"
+                    placeholder="Code à 6 chiffres"
+                    value={verificationCode}
+                    onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    style={{ ...inputStyle('verifyCode'), letterSpacing:'4px', textAlign:'center', fontWeight:'800' }}
+                  />
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <button
+                      type="button"
+                      onClick={submitEmailVerificationCode}
+                      disabled={isVerifyingCode || verificationCode.length !== 6}
+                      style={{ flex:1, padding:'10px', borderRadius:'10px', background:(isVerifyingCode || verificationCode.length !== 6)?'#bfdbfe':'#1d4ed8', color:'white', fontWeight:'800', fontSize:'0.83rem', border:'none', cursor:(isVerifyingCode || verificationCode.length !== 6)?'default':'pointer', fontFamily:'inherit' }}
+                    >
+                      {isVerifyingCode ? 'Vérification...' : 'Valider code'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={requestVerificationResend}
+                      style={{ flex:1, padding:'10px', borderRadius:'10px', background:'#dbeafe', color:'#1e3a8a', fontWeight:'800', fontSize:'0.83rem', border:'1px solid #93c5fd', cursor:'pointer', fontFamily:'inherit' }}
+                    >
+                      Renvoyer code
+                    </button>
+                  </div>
                 </div>
               )}
 

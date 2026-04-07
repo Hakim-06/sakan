@@ -8,6 +8,19 @@ const { sendEmail } = require('../utils/mailer');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const EMAIL_CODE_TTL_MS = 10 * 60 * 1000;
+const EMAIL_CODE_RESEND_COOLDOWN_MS = 60 * 1000;
+const EMAIL_CODE_MAX_ATTEMPTS = 5;
+
+const generateEmailOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
+const hashOtp = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
+
+const buildVerifyEmailHtml = (name, code) => `
+  <p>Bonjour ${name || ''},</p>
+  <p>Voici ton code de verification SakanCampus:</p>
+  <p style="font-size:22px;font-weight:800;letter-spacing:4px;margin:14px 0">${code}</p>
+  <p>Ce code expire dans 10 minutes.</p>
+`;
 
 const buildFrontendUrl = (req) => {
   const forwardedHost = req?.headers?.['x-forwarded-host'];
@@ -77,58 +90,55 @@ router.post('/register', registerRules, async (req, res) => {
       return res.status(409).json({ success: false, message: 'Cet email est déjà utilisé.' });
     }
 
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const otpCode = generateEmailOtpCode();
+    const otpHash = hashOtp(otpCode);
+    const expiresAt = new Date(Date.now() + EMAIL_CODE_TTL_MS);
 
     const user = await User.create({
       name,
       email,
       password,
       isVerified: false,
-      emailVerifyToken: tokenHash,
-      emailVerifyTokenExpires: expiresAt,
+      emailVerifyToken: null,
+      emailVerifyTokenExpires: null,
+      emailVerifyCodeHash: otpHash,
+      emailVerifyCodeExpires: expiresAt,
+      emailVerifyCodeAttempts: 0,
+      emailVerifyLastSentAt: new Date(),
     });
 
-    const frontendUrl = buildFrontendUrl(req);
-    const verifyUrl = `${frontendUrl}/login?verifyToken=${rawToken}`;
     let mailResult = { sent: false, reason: 'unknown' };
     try {
       mailResult = await sendEmail({
         to: email,
-        subject: 'Vérifie ton email - SakanCampus',
-        text: `Confirme ton compte via ce lien: ${verifyUrl}`,
-        html: `
-          <p>Bonjour ${name},</p>
-          <p>Bienvenue sur SakanCampus. Clique sur ce lien pour vérifier ton email:</p>
-          <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-          <p>Ce lien expire dans 24 heures.</p>
-        `,
+        subject: 'Code de vérification - SakanCampus',
+        text: `Ton code de vérification SakanCampus: ${otpCode} (expire dans 10 minutes).`,
+        html: buildVerifyEmailHtml(name, otpCode),
       });
     } catch (mailErr) {
       console.error('REGISTER EMAIL ERROR:', mailErr?.message || mailErr);
       mailResult = { sent: false, reason: mailErr?.message || 'smtp error' };
     }
 
-    if (!mailResult.sent) {
-      user.isVerified = true;
-      user.emailVerifyToken = null;
-      user.emailVerifyTokenExpires = null;
-      await user.save({ validateBeforeSave: false });
-
-      return res.status(201).json({
-        success: true,
-        requiresEmailVerification: true,
-        message: 'Compte créé. Email temporairement indisponible, connecte-toi directement.',
-      });
-    }
-
     const response = {
       success: true,
-      message: 'Compte créé. Vérifie ton email pour activer ton accès.',
+      message: mailResult.sent
+        ? 'Compte créé. Entre le code reçu par email pour activer ton accès.'
+        : 'Compte créé. Service email indisponible pour le moment.',
       requiresEmailVerification: true,
+      verificationMethod: 'code',
+      email,
       expiresAt,
     };
+
+    if (!mailResult.sent) {
+      if (process.env.NODE_ENV === 'production') {
+        response.message = 'Compte créé, mais l\'envoi du code a échoué. Réessaie "Renvoyer le code" dans un instant.';
+      } else {
+        response.devVerificationCode = otpCode;
+        response.message = 'Mode dev: code de vérification généré (SMTP non configuré).';
+      }
+    }
 
     return res.status(201).json(response);
 
@@ -211,6 +221,58 @@ router.post('/verify-email', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════
+// POST /api/auth/verify-email-code
+// ══════════════════════════════════════════════════════
+router.post('/verify-email-code', [
+  body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code invalide'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const code = String(req.body.code || '').trim();
+    const user = await User.findOne({ email }).select('+emailVerifyCodeHash +emailVerifyCodeExpires +emailVerifyCodeAttempts');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Cet email n\'existe pas.' });
+    }
+    if (user.isVerified) {
+      return res.json({ success: true, message: 'Email déjà vérifié.' });
+    }
+    if (!user.emailVerifyCodeHash || !user.emailVerifyCodeExpires || user.emailVerifyCodeExpires <= new Date()) {
+      return res.status(400).json({ success: false, message: 'Code expiré. Demande un nouveau code.' });
+    }
+    if ((user.emailVerifyCodeAttempts || 0) >= EMAIL_CODE_MAX_ATTEMPTS) {
+      return res.status(429).json({ success: false, message: 'Trop de tentatives. Demande un nouveau code.' });
+    }
+
+    const isValid = hashOtp(code) === user.emailVerifyCodeHash;
+    if (!isValid) {
+      user.emailVerifyCodeAttempts = (user.emailVerifyCodeAttempts || 0) + 1;
+      await user.save({ validateBeforeSave: false });
+      return res.status(400).json({ success: false, message: 'Code incorrect.' });
+    }
+
+    user.isVerified = true;
+    user.emailVerifyToken = null;
+    user.emailVerifyTokenExpires = null;
+    user.emailVerifyCodeHash = null;
+    user.emailVerifyCodeExpires = null;
+    user.emailVerifyCodeAttempts = 0;
+    await user.save({ validateBeforeSave: false });
+
+    return res.json({ success: true, message: 'Email vérifié avec succès. Tu peux te connecter.' });
+  } catch (err) {
+    console.error('VERIFY EMAIL CODE ERROR:', err);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la vérification du code.' });
+  }
+});
+
+// ══════════════════════════════════════════════════════
 // POST /api/auth/resend-verification
 // ══════════════════════════════════════════════════════
 router.post('/resend-verification', resendVerificationRules, async (req, res) => {
@@ -221,7 +283,7 @@ router.post('/resend-verification', resendVerificationRules, async (req, res) =>
 
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email }).select('+emailVerifyToken +emailVerifyTokenExpires');
+    const user = await User.findOne({ email }).select('+emailVerifyCodeHash +emailVerifyCodeExpires +emailVerifyCodeAttempts +emailVerifyLastSentAt');
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'Cet email n\'existe pas.' });
@@ -231,26 +293,31 @@ router.post('/resend-verification', resendVerificationRules, async (req, res) =>
       return res.status(409).json({ success: false, message: 'Cet email est déjà vérifié.' });
     }
 
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const now = Date.now();
+    const lastSentMs = user.emailVerifyLastSentAt ? new Date(user.emailVerifyLastSentAt).getTime() : 0;
+    const remainingCooldown = EMAIL_CODE_RESEND_COOLDOWN_MS - (now - lastSentMs);
+    if (remainingCooldown > 0) {
+      return res.status(429).json({
+        success: false,
+        message: `Attends ${Math.ceil(remainingCooldown / 1000)}s avant de renvoyer un nouveau code.`,
+      });
+    }
 
-    user.emailVerifyToken = tokenHash;
-    user.emailVerifyTokenExpires = expiresAt;
+    const otpCode = generateEmailOtpCode();
+    const otpHash = hashOtp(otpCode);
+    const expiresAt = new Date(now + EMAIL_CODE_TTL_MS);
+
+    user.emailVerifyCodeHash = otpHash;
+    user.emailVerifyCodeExpires = expiresAt;
+    user.emailVerifyCodeAttempts = 0;
+    user.emailVerifyLastSentAt = new Date(now);
     await user.save({ validateBeforeSave: false });
 
-    const frontendUrl = buildFrontendUrl(req);
-    const verifyUrl = `${frontendUrl}/login?verifyToken=${rawToken}`;
     const mailResult = await sendEmail({
       to: email,
-      subject: 'Nouveau lien de vérification - SakanCampus',
-      text: `Confirme ton compte via ce lien: ${verifyUrl}`,
-      html: `
-        <p>Bonjour ${user.name || ''},</p>
-        <p>Voici un nouveau lien pour vérifier ton email:</p>
-        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-        <p>Ce lien expire dans 24 heures.</p>
-      `,
+      subject: 'Nouveau code de vérification - SakanCampus',
+      text: `Ton nouveau code de vérification SakanCampus: ${otpCode} (expire dans 10 minutes).`,
+      html: buildVerifyEmailHtml(user.name, otpCode),
     });
 
     if (!mailResult.sent && process.env.NODE_ENV === 'production') {
@@ -259,13 +326,14 @@ router.post('/resend-verification', resendVerificationRules, async (req, res) =>
 
     const response = {
       success: true,
-      message: 'Nouveau lien envoyé. Vérifie ta boîte mail.',
+      message: 'Nouveau code envoyé. Vérifie ta boîte mail.',
       expiresAt,
+      verificationMethod: 'code',
     };
 
     if (!mailResult.sent && process.env.NODE_ENV !== 'production') {
-      response.devVerifyToken = rawToken;
-      response.message = 'SMTP non configuré. Utilise le token de dev pour vérifier le compte.';
+      response.devVerificationCode = otpCode;
+      response.message = 'SMTP non configuré. Utilise le code de dev pour vérifier le compte.';
     }
 
     return res.json(response);
