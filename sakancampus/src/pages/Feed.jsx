@@ -2082,6 +2082,30 @@ export default function Feed() {
         overflow:hidden;
       }
       .msg-bubble{max-width:88%;font-size:0.8rem}
+
+      .settings-shell{
+        height:min(92dvh, 92vh)!important;
+        display:flex!important;
+        flex-direction:column!important;
+      }
+      .settings-sidebar{
+        width:100%!important;
+        flex-direction:row!important;
+        align-items:center;
+        gap:6px;
+        padding:10px!important;
+        border-right:none!important;
+        border-bottom:1px solid ${border}!important;
+        overflow-x:auto;
+        scrollbar-width:none;
+      }
+      .settings-sidebar::-webkit-scrollbar{display:none}
+      .settings-title{display:none}
+      .settings-item{margin-bottom:0!important;white-space:nowrap;font-size:0.76rem!important;padding:8px 10px!important}
+      .settings-content{padding:14px!important}
+
+      .profile-header{padding:12px 14px!important;gap:8px;align-items:flex-start!important}
+      .profile-actions{display:flex;gap:6px;align-items:center}
     }
 
     @media(max-width: 420px){
@@ -2730,10 +2754,10 @@ export default function Feed() {
       ══════════════════════════════════════════════ */}
       {isSettingsOpen && (
         <Overlay onClose={()=>setIsSettingsOpen(false)} zIndex={9999}>
-          <div className="mobile-modal" style={{ background:bg, width:'100%', maxWidth:'820px', height:isMobile?'86vh':'64vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflow:'hidden', display:'flex', animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)', border:`1px solid ${border}` }} onClick={e=>e.stopPropagation()}>
+          <div className="mobile-modal settings-shell" style={{ background:bg, width:'100%', maxWidth:'820px', height:isMobile?'86vh':'64vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflow:'hidden', display:'flex', animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)', border:`1px solid ${border}` }} onClick={e=>e.stopPropagation()}>
             {/* SIDEBAR */}
-            <div style={{ width:isMobile?'140px':'200px', background: darkMode?'rgba(255,255,255,0.02)':'#f8fafc', borderRight:`1px solid ${border}`, padding:isMobile?'14px 10px':'22px 16px', display:'flex', flexDirection:'column' }}>
-              <h2 style={{ margin:'0 0 18px', fontSize:'1rem', color:text, fontWeight:'800', paddingLeft:'6px' }}>Paramètres</h2>
+            <div className="settings-sidebar" style={{ width:isMobile?'140px':'200px', background: darkMode?'rgba(255,255,255,0.02)':'#f8fafc', borderRight:`1px solid ${border}`, padding:isMobile?'14px 10px':'22px 16px', display:'flex', flexDirection:'column' }}>
+              <h2 className="settings-title" style={{ margin:'0 0 18px', fontSize:'1rem', color:text, fontWeight:'800', paddingLeft:'6px' }}>Paramètres</h2>
               {[{key:'compte',icon:<I.user width="14" height="14"/>,label:'Compte'},{key:'confidentialite',icon:<I.lock width="14" height="14"/>,label:'Confidentialité'},{key:'notifications',icon:<I.bell width="14" height="14"/>,label:'Notifications'}].map(({key,icon,label})=>(
                 <div key={key} className={`settings-item ${settingsTab===key?'active':''}`} onClick={()=>setSettingsTab(key)}>
                   <span style={{ display:'flex' }}>{icon}</span>{label}
@@ -2741,7 +2765,7 @@ export default function Feed() {
               ))}
             </div>
             {/* CONTENT */}
-            <div className="scroll-area" style={{ flex:1, padding:'26px', overflowY:'auto' }}>
+            <div className="scroll-area settings-content" style={{ flex:1, padding:'26px', overflowY:'auto' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'22px' }}>
                 <h3 style={{ margin:0, fontSize:'1.1rem', color:text, fontWeight:'800' }}>
                   {settingsTab==='compte'?'Gérer mon compte': settingsTab==='confidentialite'?'Confidentialité':'Notifications'}
@@ -2892,16 +2916,16 @@ export default function Feed() {
         <Overlay onClose={()=>setIsMyProfileOpen(false)} zIndex={9999}>
           <div className="mobile-modal scroll-area" style={{ background:bg, width:'100%', maxWidth:'560px', maxHeight:'92vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflowY:'auto', border:`1px solid ${border}`, animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)' }} onClick={e=>e.stopPropagation()}>
             {/* STICKY HEADER */}
-            <div style={{ padding:'18px 22px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', zIndex:5, backdropFilter:'blur(16px)' }}>
+            <div className="profile-header" style={{ padding:'18px 22px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', zIndex:5, backdropFilter:'blur(16px)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'9px' }}>
                 <div style={{ width:'32px', height:'32px', background:'linear-gradient(135deg,#ea580c,#f97316)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <I.user width="15" height="15" style={{color:'white'}} />
                 </div>
                 <h2 style={{ margin:0, fontSize:'1.08rem', color:text, fontWeight:'800' }}>Mon Profil</h2>
               </div>
-              <div style={{ display:'flex', gap:'8px' }}>
-                <button onClick={()=>setIsMyProfileOpen(false)} style={{ padding:'7px 14px', borderRadius:'20px', background: darkMode?'rgba(255,255,255,0.06)':'#f1f5f9', border:'none', cursor:'pointer', color:textMuted, fontWeight:'600', fontSize:'0.82rem', fontFamily:'inherit' }}>Annuler</button>
-                <button onClick={saveProfile} style={{ padding:'7px 16px', borderRadius:'20px', background:'linear-gradient(135deg,#ea580c,#f97316)', border:'none', cursor:'pointer', color:'white', fontWeight:'700', fontSize:'0.82rem', fontFamily:'inherit', display:'flex', alignItems:'center', gap:'6px', boxShadow:'0 4px 14px rgba(234,88,12,0.35)' }}>
+              <div className="profile-actions" style={{ display:'flex', gap:'8px' }}>
+                <button onClick={()=>setIsMyProfileOpen(false)} style={{ padding:isMobile?'7px 10px':'7px 14px', borderRadius:'20px', background: darkMode?'rgba(255,255,255,0.06)':'#f1f5f9', border:'none', cursor:'pointer', color:textMuted, fontWeight:'600', fontSize:'0.82rem', fontFamily:'inherit' }}>Annuler</button>
+                <button onClick={saveProfile} style={{ padding:isMobile?'7px 11px':'7px 16px', borderRadius:'20px', background:'linear-gradient(135deg,#ea580c,#f97316)', border:'none', cursor:'pointer', color:'white', fontWeight:'700', fontSize:'0.82rem', fontFamily:'inherit', display:'flex', alignItems:'center', gap:'6px', boxShadow:'0 4px 14px rgba(234,88,12,0.35)' }}>
                   <I.check width="13" height="13"/> Sauvegarder
                 </button>
               </div>
