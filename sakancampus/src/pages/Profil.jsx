@@ -406,6 +406,26 @@ export default function Profil() {
         {/* ── RIGHT FORM ── */}
         <div className="pr-right-form" style={{ padding:isMobileView?'18px 12px':'36px 32px', overflowY:'auto', maxHeight:isMobileView?'none':'90vh' }}>
 
+          {isMobileView && (
+            <div style={{ marginBottom:'16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'8px' }}>
+              <div
+                style={{ position:'relative', cursor:'pointer', width:'92px', height:'92px' }}
+                onClick={() => fileRef.current.click()}
+              >
+                <div style={{ width:'100%', height:'100%', borderRadius:'50%', border: img ? '3px solid #ea580c' : '2.5px dashed #cbd5e1', overflow:'hidden', background:'#f8fafc', display:'flex', alignItems:'center', justifyContent:'center', boxShadow: img ? '0 8px 20px rgba(234,88,12,0.25)' : 'none' }}>
+                  {img
+                    ? <img src={img} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    : <span style={{ color:'#94a3b8' }}><ICamera /></span>
+                  }
+                </div>
+                <div style={{ position:'absolute', bottom:'2px', right:'2px', width:'24px', height:'24px', background:'#ea580c', borderRadius:'50%', border:'2px solid white', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+              </div>
+              <span style={{ fontSize:'0.74rem', fontWeight:'700', color:'#64748b' }}>Cliquer pour ajouter photo</span>
+            </div>
+          )}
+
           {/* NOM + AGE */}
           <div className="pr-row-name-age" style={{ display:'grid', gridTemplateColumns:isMobileView?'1fr':'1.6fr 1fr', gap:'14px', marginBottom:'18px' }}>
             <div>
