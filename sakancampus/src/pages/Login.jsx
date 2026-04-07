@@ -314,7 +314,7 @@ export default function Login() {
   );
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', position: 'relative' }}>
+    <div className="sc-login-root" style={{ width: '100vw', height: '100vh', display: 'flex', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', position: 'relative' }}>
       <style>{`
         *{box-sizing:border-box}
         body,html{margin:0!important;padding:0!important;overflow:hidden;background:#0b1120}
@@ -334,10 +334,20 @@ export default function Login() {
         .sc-btn:hover:not(:disabled){transform:scale(1.02)!important;box-shadow:0 10px 28px rgba(234,88,12,0.5)!important}
         .sc-btn:active:not(:disabled){transform:scale(0.98)!important}
         .sc-eye:hover{color:#ea580c!important}
+
+        @media (max-width: 900px){
+          body,html{overflow:auto;background:#f8fafc}
+          .sc-login-root{height:auto!important;min-height:100vh!important;overflow:visible!important}
+          .sc-left-panel{display:none!important}
+          .sc-right-panel{width:100%!important;min-height:100vh!important;padding:14px!important;align-items:flex-start!important}
+          .sc-login-shell{max-width:560px!important;margin:18px auto 26px!important}
+          .sc-tab-switch{margin-bottom:18px!important}
+          .sc-login-card{padding:24px 18px!important;border-radius:18px!important}
+        }
       `}</style>
 
       {/* ══ LEFT PANEL ═══════════════════════════════════════════════════ */}
-      <div style={{
+      <div className="sc-left-panel" style={{
         flex: '1.15',
         position: 'relative',
         overflow: 'hidden',
@@ -441,11 +451,11 @@ export default function Login() {
       </div>
 
       {/* ══ RIGHT PANEL ══════════════════════════════════════════════════ */}
-      <div style={{ flex:'1', minWidth:'0', background:'#f8fafc', display:'flex', justifyContent:'center', alignItems:'center', padding:'24px', overflowY:'auto' }}>
-        <div style={{ width:'100%', maxWidth:'420px', animation:'fadeUp 0.55s cubic-bezier(0.16,1,0.3,1)' }}>
+      <div className="sc-right-panel" style={{ flex:'1', minWidth:'0', background:'#f8fafc', display:'flex', justifyContent:'center', alignItems:'center', padding:'24px', overflowY:'auto' }}>
+        <div className="sc-login-shell" style={{ width:'100%', maxWidth:'420px', animation:'fadeUp 0.55s cubic-bezier(0.16,1,0.3,1)' }}>
 
           {/* Tab switcher */}
-          <div style={{ display:'flex', background:'#e9eef5', borderRadius:'14px', padding:'4px', marginBottom:'28px', gap:'4px' }}>
+          <div className="sc-tab-switch" style={{ display:'flex', background:'#e9eef5', borderRadius:'14px', padding:'4px', marginBottom:'28px', gap:'4px' }}>
             {[['login','Se connecter'],['register',"S'inscrire"]].map(([m, label]) => (
               <button key={m} className="sc-tab" onClick={() => setMode(m)} style={{
                 flex:1, padding:'11px', borderRadius:'11px', border:'none', cursor:'pointer',
@@ -461,7 +471,7 @@ export default function Login() {
           </div>
 
           {/* Card */}
-          <div style={{ background:'white', borderRadius:'24px', padding:'36px 32px', border:'1px solid #e8edf3', boxShadow:'0 4px 24px rgba(15,23,42,0.07)' }}>
+          <div className="sc-login-card" style={{ background:'white', borderRadius:'24px', padding:'36px 32px', border:'1px solid #e8edf3', boxShadow:'0 4px 24px rgba(15,23,42,0.07)' }}>
 
             {/* Title */}
             <div style={{ marginBottom:'24px' }}>
