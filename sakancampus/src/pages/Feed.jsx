@@ -1798,6 +1798,7 @@ export default function Feed() {
   const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
   const isMobile = isAiCompactMobile;
   const mobileBottomInset = 'calc(86px + env(safe-area-inset-bottom, 0px))';
+  const shouldShowMobileNav = isMobile && !isMessagesOpen && !isAiOpen && !isCreateAdOpen && !isMyProfileOpen && !isSettingsOpen && !selectedProfile;
   const contactCanSubmit =
     contactForm.name.trim().length >= 2 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactForm.email.trim()) &&
@@ -2079,7 +2080,7 @@ export default function Feed() {
   if (!isLoggedIn) return null;
 
   return (
-    <div style={{ background:bg, color:text, minHeight:'100vh', width:'100%', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflowX:'hidden', transition:'background 0.4s,color 0.3s', paddingBottom:isMobile?mobileBottomInset:'0' }}>
+    <div style={{ background:bg, color:text, minHeight:'100vh', width:'100%', display:'flex', flexDirection:'column', fontFamily:"'Inter',-apple-system,sans-serif", position:'relative', overflowX:'hidden', transition:'background 0.4s,color 0.3s', paddingBottom:shouldShowMobileNav?mobileBottomInset:'0' }}>
       <Toast toasts={toasts} />
       <style>{css}</style>
 
@@ -2468,9 +2469,9 @@ export default function Feed() {
       )}
 
       {/* AI ASSISTANT */}
-      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?'calc(86px + env(safe-area-inset-bottom, 0px))':'20px', zIndex:1200 }}>
+      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?(isAiOpen?'calc(10px + env(safe-area-inset-bottom, 0px))':'calc(86px + env(safe-area-inset-bottom, 0px))'):'20px', zIndex:1200 }}>
         {isAiOpen && (
-          <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', marginBottom:isAiCompactMobile?'6px':'10px', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:isAiCompactMobile?'fixed':'relative', right:isAiCompactMobile?'6px':undefined, bottom:isAiCompactMobile?'6px':undefined }}>
+          <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', marginBottom:isAiCompactMobile?'6px':'10px', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:'relative' }}>
             <div style={{ padding:'12px 14px', borderBottom:`1px solid ${border}`, background:darkMode?'linear-gradient(135deg,rgba(30,41,59,0.85),rgba(15,23,42,0.92))':'linear-gradient(135deg,#fff7ed,#ffffff)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                 <div style={{ width:'34px', height:'34px', borderRadius:'11px', background:'linear-gradient(135deg,#ea580c,#f97316)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', position:'relative', animation:'aiGlow 2.4s ease-in-out infinite' }}>
@@ -2514,7 +2515,7 @@ export default function Feed() {
               <div ref={aiMessagesEndRef} />
             </div>
 
-            <div style={{ padding:'10px', borderTop:`1px solid ${border}` }}>
+            <div style={{ padding:'10px', borderTop:`1px solid ${border}`, background:surface, position:'sticky', bottom:0 }}>
               <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
                 {['Analyse prix', 'Top villes', 'État des filtres', 'Conseil rapide'].map(q => (
                   <button
@@ -2554,7 +2555,7 @@ export default function Feed() {
         </button>
       </div>
 
-      {isMobile && (
+      {shouldShowMobileNav && (
         <div className="mobile-bottom-nav">
           {[
             ['toutes', 'Toutes', <I.home width="14" height="14" />, filteredToutes.length],
@@ -3161,7 +3162,7 @@ export default function Feed() {
                     <span style={{ fontSize:'0.8rem', color:textMuted }}>Image prête à envoyer</span>
                   </div>
                 )}
-                <div style={{ padding:'11px 13px', borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center' }}>
+                <div style={{ padding:`11px 13px calc(11px + env(safe-area-inset-bottom, 0px))`, borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center', background:surface }}>
                   <input type="text" placeholder={`Message à ${activeChat.name}...`} value={newMessage}
                     onChange={e=>setNewMessage(e.target.value)}
                     onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&sendMessage()}
