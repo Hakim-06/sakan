@@ -1447,7 +1447,15 @@ export default function Feed() {
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
-        const uploadData = await uploadRes.json();
+        const uploadText = await uploadRes.text();
+        const uploadData = (() => {
+          try { return JSON.parse(uploadText || '{}'); } catch (_) { return {}; }
+        })();
+
+        if (!uploadRes.ok) {
+          throw new Error(uploadData.message || `Upload impossible (${uploadRes.status})`);
+        }
+
         if (uploadData.success) {
           uploadedPhotos = uploadData.photos;
         } else {
@@ -1471,7 +1479,14 @@ export default function Feed() {
           photos:      uploadedPhotos,
         }),
       });
-      const data = await res.json();
+      const responseText = await res.text();
+      const data = (() => {
+        try { return JSON.parse(responseText || '{}'); } catch (_) { return {}; }
+      })();
+
+      if (!res.ok) {
+        throw new Error(data.message || `Erreur serveur (${res.status})`);
+      }
 
       if (data.success) {
         if (data.annonce) {
@@ -1502,7 +1517,7 @@ export default function Feed() {
 
     } catch (err) {
       console.error('handlePublishAd error:', err);
-      showToast('Erreur réseau ou serveur', 'error');
+      showToast(err.message || 'Erreur réseau ou serveur', 'error');
     } finally {
       setIsPublishing(false);
     }
