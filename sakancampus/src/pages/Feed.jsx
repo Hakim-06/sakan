@@ -1970,6 +1970,9 @@ export default function Feed() {
       .tab-item{padding:13px 0;font-size:0.76rem}
       .tab-count{font-size:0.62rem}
       .publish-btn{padding:8px 12px;font-size:0.76rem}
+      .icon-btn{width:36px;height:36px}
+      .detail-right{min-width:0}
+      .mobile-hide{display:none!important}
       .mobile-two-col{grid-template-columns:1fr!important}
       .mobile-modal{border-radius:16px!important;max-height:96vh!important}
       .detail-left,.detail-right{padding:14px}
@@ -2002,7 +2005,7 @@ export default function Feed() {
 
         <div style={{ display:'flex', alignItems:'center', gap:isMobile?'6px':'10px' }}>
           <button className="publish-btn" onClick={() => setIsCreateAdOpen(true)}>
-            <I.plus width="14" height="14" /> Publier
+            <I.plus width="14" height="14" /> {isMobile ? 'Publier' : 'Publier'}
           </button>
           {/* MESSAGES */}
           <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); fetchConversations(); }}>
@@ -2060,7 +2063,13 @@ export default function Feed() {
       {/* ── TABS ── */}
       <div className="tabs-wrapper">
         <div className="tabs-container">
-          {[['toutes','Toutes les annonces',<I.home width="13" height="13"/>,filteredToutes.length],['matching','Matching',<I.zap width="13" height="13"/>,filteredMatching.length],['mes_annonces','Mes annonces',<I.edit width="13" height="13"/>,mesAnnonces.length],['favoris','Favoris',<I.heart width="13" height="13"/>,filteredFavoris.length],['contact','Contact',<I.mail width="13" height="13"/>,0]].map(([key,label,icon,count])=>(
+          {[
+            ['toutes', isMobile ? 'Toutes' : 'Toutes les annonces', <I.home width="13" height="13"/>, filteredToutes.length],
+            ['matching', isMobile ? 'Match' : 'Matching', <I.zap width="13" height="13"/>, filteredMatching.length],
+            ['mes_annonces', isMobile ? 'Mes' : 'Mes annonces', <I.edit width="13" height="13"/>, mesAnnonces.length],
+            ['favoris', isMobile ? 'Fav' : 'Favoris', <I.heart width="13" height="13"/>, filteredFavoris.length],
+            ['contact', isMobile ? 'Aide' : 'Contact', <I.mail width="13" height="13"/>, 0],
+          ].map(([key,label,icon,count])=>(
             <div key={key} className={`tab-item ${activeTab===key?'active':''}`} onClick={()=>setActiveTab(key)}>
               <span style={{ color: activeTab===key?'#ea580c':'inherit', display:'flex' }}>{icon}</span>
               {label}
@@ -2293,7 +2302,7 @@ export default function Feed() {
 
           <section className="contact-panel">
             <form onSubmit={submitContactFromFeed} style={{ display:'grid', gap:'10px' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:isMobile?'1fr':'1fr 1fr', gap:'10px' }}>
                 <input className="pro-input" placeholder="Nom" value={contactForm.name} onChange={e => setContactForm(v => ({ ...v, name: e.target.value }))} />
                 <input className="pro-input" type="email" placeholder="Email" value={contactForm.email} onChange={e => setContactForm(v => ({ ...v, email: e.target.value }))} />
               </div>
