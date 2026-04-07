@@ -30,6 +30,12 @@ app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
+    try {
+      const isVercelOrigin = /\.vercel\.app$/i.test(new URL(origin).hostname);
+      if (isVercelOrigin) return callback(null, true);
+    } catch (e) {
+      return callback(new Error(`Invalid CORS origin: ${origin}`), false);
+    }
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS blocked for origin: ${origin}`), false);
   },
