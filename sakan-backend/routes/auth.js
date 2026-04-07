@@ -103,19 +103,10 @@ router.post('/register', registerRules, async (req, res) => {
       user.emailVerifyTokenExpires = null;
       await user.save({ validateBeforeSave: false });
 
-      const token = generateToken(user._id);
       return res.status(201).json({
         success: true,
-        token,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          photo: user.photo,
-          profileComplete: user.profileComplete,
-        },
-        requiresEmailVerification: false,
-        message: 'Compte créé. Vérification email indisponible, accès activé directement.',
+        requiresEmailVerification: true,
+        message: 'Compte créé. Email temporairement indisponible, connecte-toi directement.',
       });
     }
 
