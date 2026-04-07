@@ -226,9 +226,7 @@ const AnnonceCard = ({ profile, onSelect, onContact, isFavorite, onToggleFavorit
   const photos = profile.apartmentImages?.length > 0 ? profile.apartmentImages : [profile.image];
   const text = darkMode?'#f8fafc':'#0f172a';
   const textMuted = darkMode?'#94a3b8':'#64748b';
-  const surface = darkMode?'#1e293b':'white';
   const borderColor = darkMode?'#334155':'#f1f5f9';
-  const borderStrong = darkMode?'#334155':'#e2e8f0';
   const budgetNum = Number(profile.budget) || 0;
   const formattedBudget = new Intl.NumberFormat('fr-MA').format(budgetNum);
   const subtitle = profile.bio || profile.description || 'Annonce etudiant bien situee, propre et pratique pour les cours.';
@@ -430,7 +428,7 @@ export default function Feed() {
         subject: '',
         message: '',
       };
-    } catch (_) {
+    } catch {
       return { name: '', email: '', subject: '', message: '' };
     }
   });
@@ -457,7 +455,7 @@ export default function Feed() {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const messagesEndRef = useRef(null);
   const aiPanelRef = useRef(null);
@@ -771,7 +769,7 @@ export default function Feed() {
         at: Date.now(),
       };
       setAiMessages(prev => [...prev, assistantMsg]);
-    } catch (err) {
+    } catch {
       setAiRuntimeMode('local');
       const assistantMsg = {
         id: Date.now() + Math.random(),
@@ -849,7 +847,7 @@ export default function Feed() {
       if (typeof preferences.darkMode === 'boolean') {
         setDarkMode(preferences.darkMode);
       }
-    } catch (_) {
+    } catch {
       showToast('Impossible de charger les paramètres.', 'error');
     } finally {
       setIsSettingsLoading(false);
@@ -1063,7 +1061,9 @@ export default function Feed() {
 
         return [...mappedWithCache, ...pendingLocal];
       });
-    } catch (_) {}
+    } catch {
+      // Ignore transient polling failures.
+    }
   }, []);
 
   const loadMessagesWithUser = useCallback(async (userId, refreshList = true) => {
@@ -1114,7 +1114,9 @@ export default function Feed() {
         await fetchConversations();
         await fetchUnreadCount();
       }
-    } catch (_) {}
+    } catch {
+      // Ignore message fetch failure and retry on next poll.
+    }
   }, [fetchConversations, myUserId]);
 
   const fetchUnreadCount = useCallback(async () => {
@@ -1129,7 +1131,9 @@ export default function Feed() {
       if (!res.ok || !data.success) return;
 
       setUnreadCount(Number(data.count || 0));
-    } catch (_) {}
+    } catch {
+      // Ignore unread count fetch failure.
+    }
   }, []);
 
   const normalizeAnnonce = (a, opts = {}) => {
@@ -1201,7 +1205,7 @@ export default function Feed() {
         } else {
           showToast(data.message || 'Lien de vérification invalide.', 'error');
         }
-      } catch (_) {
+      } catch {
         showToast('Impossible de vérifier le lien email.', 'error');
       } finally {
         params.delete('emailVerifyToken');
@@ -1328,7 +1332,7 @@ export default function Feed() {
             image:  data.user.photo?.url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
           });
         }
-      } catch (err) {
+      } catch {
         console.log('Profil API non disponible.');
       }
     };
@@ -1500,7 +1504,7 @@ export default function Feed() {
         });
         const uploadText = await uploadRes.text();
         const uploadData = (() => {
-          try { return JSON.parse(uploadText || '{}'); } catch (_) { return {}; }
+          try { return JSON.parse(uploadText || '{}'); } catch { return {}; }
         })();
 
         if (!uploadRes.ok) {
@@ -1532,7 +1536,7 @@ export default function Feed() {
       });
       const responseText = await res.text();
       const data = (() => {
-        try { return JSON.parse(responseText || '{}'); } catch (_) { return {}; }
+        try { return JSON.parse(responseText || '{}'); } catch { return {}; }
       })();
 
       if (!res.ok) {
@@ -1721,7 +1725,9 @@ export default function Feed() {
           return;
         }
       }
-    } catch (_) {}
+    } catch {
+      // Fallback to local profile state when API is unavailable.
+    }
     // fallback si API fail
     setEditProfile({...myProfile});
     setIsMyProfileOpen(true);
@@ -1770,7 +1776,7 @@ export default function Feed() {
       setMyProfile({...editProfile});
       setIsMyProfileOpen(false);
       showToast('Profil mis à jour ✓');
-    } catch (err) {
+    } catch {
       // si API fail → sauvegarde local quand même
       setMyProfile({...editProfile});
       setIsMyProfileOpen(false);
@@ -1793,7 +1799,6 @@ export default function Feed() {
   const filteredFavoris = annonces.filter(p => favorites.includes(p.id));
   const filteredCities = moroccanCities.filter(c => c.toLowerCase().includes(searchCity.toLowerCase()));
   const activeChat = conversations.find(c => String(c.userId) === String(activeConvId));
-  const matchingProgress = ((matchingThreshold - 50) / 45) * 100;
   const hasPriceFilter = !!priceMin || !!priceMax;
   const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
   const isMobile = isAiCompactMobile;
@@ -2185,7 +2190,9 @@ export default function Feed() {
                     try {
                       const token = localStorage.getItem('sc_token');
                       if (token) await fetch('/api/auth/logout', { method:'POST', headers:{ Authorization:'Bearer '+token } });
-                    } catch(_) {}
+                    } catch {
+                      // Ignore server logout errors; clear local session anyway.
+                    }
                     localStorage.removeItem('sc_token');
                     localStorage.removeItem('sc_user');
                     setIsProfileMenuOpen(false);
