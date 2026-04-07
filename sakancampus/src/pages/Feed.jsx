@@ -2109,6 +2109,11 @@ export default function Feed() {
       .profile-body{padding:14px!important}
       .profile-actions button{font-size:0.74rem!important;white-space:nowrap}
       .mobile-modal{width:calc(100vw - 10px)!important;max-width:calc(100vw - 10px)!important;max-height:calc(100dvh - 8px)!important}
+
+      .profile-header{flex-direction:column!important;align-items:stretch!important}
+      .profile-title-row{display:flex;align-items:center;justify-content:space-between}
+      .profile-actions{width:100%;display:grid!important;grid-template-columns:1fr 1fr;gap:8px}
+      .profile-actions button{justify-content:center}
     }
 
     @media(max-width: 420px){
@@ -2920,16 +2925,16 @@ export default function Feed() {
           <div className="mobile-modal scroll-area" style={{ background:bg, width:'100%', maxWidth:'560px', maxHeight:'92vh', borderRadius:'24px', boxShadow:`0 30px 60px rgba(0,0,0,0.4)`, overflowY:'auto', border:`1px solid ${border}`, animation:'modalIn 0.35s cubic-bezier(0.16,1,0.3,1)' }} onClick={e=>e.stopPropagation()}>
             {/* STICKY HEADER */}
             <div className="profile-header" style={{ padding:'18px 22px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, background: darkMode?'rgba(11,17,32,0.97)':'rgba(255,255,255,0.97)', zIndex:5, backdropFilter:'blur(16px)' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'9px' }}>
+              <div className="profile-title-row" style={{ display:'flex', alignItems:'center', gap:'9px' }}>
                 <div style={{ width:'32px', height:'32px', background:'linear-gradient(135deg,#ea580c,#f97316)', borderRadius:'9px', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <I.user width="15" height="15" style={{color:'white'}} />
                 </div>
                 <h2 style={{ margin:0, fontSize:'1.08rem', color:text, fontWeight:'800' }}>Mon Profil</h2>
               </div>
               <div className="profile-actions" style={{ display:'flex', gap:'8px' }}>
-                <button onClick={()=>setIsMyProfileOpen(false)} style={{ padding:isMobile?'7px 10px':'7px 14px', borderRadius:'20px', background: darkMode?'rgba(255,255,255,0.06)':'#f1f5f9', border:'none', cursor:'pointer', color:textMuted, fontWeight:'600', fontSize:'0.82rem', fontFamily:'inherit' }}>Annuler</button>
+                <button onClick={()=>setIsMyProfileOpen(false)} style={{ padding:isMobile?'7px 10px':'7px 14px', borderRadius:'20px', background: darkMode?'rgba(255,255,255,0.06)':'#f1f5f9', border:'none', cursor:'pointer', color:textMuted, fontWeight:'600', fontSize:'0.82rem', fontFamily:'inherit' }}>{isMobile ? 'Cancel' : 'Annuler'}</button>
                 <button onClick={saveProfile} style={{ padding:isMobile?'7px 11px':'7px 16px', borderRadius:'20px', background:'linear-gradient(135deg,#ea580c,#f97316)', border:'none', cursor:'pointer', color:'white', fontWeight:'700', fontSize:'0.82rem', fontFamily:'inherit', display:'flex', alignItems:'center', gap:'6px', boxShadow:'0 4px 14px rgba(234,88,12,0.35)' }}>
-                  <I.check width="13" height="13"/> Sauvegarder
+                  <I.check width="13" height="13"/> {isMobile ? 'Save' : 'Sauvegarder'}
                 </button>
               </div>
             </div>
