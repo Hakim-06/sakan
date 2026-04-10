@@ -4,6 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 
 export default function Login() {
   const navigate = useNavigate();
+  const hasGoogleClientId = Boolean(String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim());
   const [mode, setMode]       = useState('login');
   const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
@@ -554,7 +555,7 @@ export default function Login() {
 
             {/* Google */}
             {/* BOUTONA DYAL GOOGLE */}
-{!isVerificationStep && (
+            {!isVerificationStep && hasGoogleClientId && (
 <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
   <GoogleLogin
     onSuccess={handleGoogleSuccess}
@@ -565,8 +566,13 @@ export default function Login() {
   />
 </div>
 )}
+            {!isVerificationStep && !hasGoogleClientId && (
+              <div style={{ marginTop: '6px', marginBottom:'4px', background:'#fff7ed', border:'1px solid #fdba74', borderRadius:'10px', padding:'10px 12px', fontSize:'0.8rem', color:'#9a3412', fontWeight:'700' }}>
+                Connexion Google indisponible: VITE_GOOGLE_CLIENT_ID manquant.
+              </div>
+            )}
             {/* Divider */}
-            {!isVerificationStep && (
+            {!isVerificationStep && hasGoogleClientId && (
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px' }}>
               <div style={{ flex:1, height:'1px', background:'#f1f5f9' }} />
               <span style={{ color:'#94a3b8', fontSize:'0.72rem', fontWeight:'700', letterSpacing:'1px', whiteSpace:'nowrap' }}>OU PAR EMAIL</span>

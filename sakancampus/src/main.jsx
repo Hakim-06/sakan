@@ -6,11 +6,16 @@ import './index.css'
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const hasGoogleClientId = Boolean(String(googleClientId).trim());
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={googleClientId}>
+    {hasGoogleClientId ? (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <App />
+      </GoogleOAuthProvider>
+    ) : (
       <App />
-    </GoogleOAuthProvider>
+    )}
   </React.StrictMode>,
 )
