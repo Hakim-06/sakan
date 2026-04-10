@@ -121,6 +121,48 @@ export default function Profil() {
   const [cityOpen, setCityOpen] = useState(false);
   const [gen, setGen] = useState(false);
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    // Prefill quickly from local cache right after signup/login.
+    try {
+      const stored = JSON.parse(localStorage.getItem('sc_user') || '{}');
+      if (stored?.name) setName(String(stored.name));
+    } catch {
+      // Ignore malformed local cache.
+    }
+
+    // Sync with backend in case local cache is stale.
+    const loadMe = async () => {
+      try {
+        const token = localStorage.getItem('sc_token');
+        if (!token) return;
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.success || !data?.user) return;
+
+        const user = data.user;
+        if (user.name) setName(String(user.name));
+        if (user.age) setAge(String(user.age));
+        if (user.gender) setGender(String(user.gender));
+        if (user.ecole) setEcole(String(user.ecole));
+        if (user.city) {
+          const cityVal = String(user.city);
+          setCity(cityVal);
+          setCityQ(cityVal);
+        }
+        if (user.bio) setBio(String(user.bio));
+        if (user.budget) setBudget(String(user.budget));
+        if (Array.isArray(user.traits)) setSelTags(user.traits);
+        if (user.photo?.url) setImg(user.photo.url);
+      } catch {
+        // Keep local prefills if API is unavailable.
+      }
+    };
+
+    loadMe();
+  }, []);
    
   const generateBio = async () => {
     if (!name || selTags.length === 0) {
