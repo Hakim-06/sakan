@@ -556,16 +556,30 @@ export default function Login() {
             {/* Google */}
             {/* BOUTONA DYAL GOOGLE */}
             {!isVerificationStep && hasGoogleClientId && (
-<div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
-  <GoogleLogin
-    onSuccess={handleGoogleSuccess}
-    onError={() => {
-      console.log('Login Failed');
-      setError('Erreur d\'authentification Google.');
-    }}
-  />
-</div>
-)}
+              <div style={{ marginTop:'12px', marginBottom:'2px', display:'flex', justifyContent:'center' }}>
+                <div style={{
+                  border:'1px solid #e2e8f0',
+                  borderRadius:'999px',
+                  padding:'4px',
+                  background:'#ffffff',
+                  boxShadow:'0 6px 18px rgba(15,23,42,0.06)',
+                  overflow:'hidden',
+                }}>
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => {
+                      console.log('Login Failed');
+                      setError('Erreur d\'authentification Google.');
+                    }}
+                    shape="pill"
+                    size="large"
+                    text="continue_with"
+                    width="320"
+                    logo_alignment="left"
+                  />
+                </div>
+              </div>
+            )}
             {!isVerificationStep && !hasGoogleClientId && (
               <div style={{ marginTop: '6px', marginBottom:'4px', background:'#fff7ed', border:'1px solid #fdba74', borderRadius:'10px', padding:'10px 12px', fontSize:'0.8rem', color:'#9a3412', fontWeight:'700' }}>
                 Connexion Google indisponible: VITE_GOOGLE_CLIENT_ID manquant.
