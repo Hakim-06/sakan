@@ -468,6 +468,7 @@ export default function Feed() {
   ]);
   const [activeConvId, setActiveConvId] = useState(null);
   const [messageSearch, setMessageSearch] = useState('');
+  const [messageListFilter, setMessageListFilter] = useState('all');
   const [pinnedConversations, setPinnedConversations] = useState(() => {
     try {
       const raw = localStorage.getItem('sc_pinned_conversations') || '[]';
@@ -1759,6 +1760,7 @@ export default function Feed() {
 
     setActiveConvId(targetId);
     setIsMessagesOpen(true);
+    setMessageListFilter('all');
     loadMessagesWithUser(targetId, false);
   };
   const openProfileEdit = async () => {
@@ -1864,12 +1866,18 @@ export default function Feed() {
   const filteredFavoris = annonces.filter(p => favorites.includes(p.id));
   const filteredCities = moroccanCities.filter(c => c.toLowerCase().includes(searchCity.toLowerCase()));
   const activeChat = conversations.find(c => String(c.userId) === String(activeConvId));
+  const unreadConversationCount = conversations.filter((c) => Number(c.unread || 0) > 0).length;
+  const pinnedConversationCount = conversations.filter((c) => pinnedConversations.includes(String(c.userId))).length;
   const filteredConversationsList = conversations.filter((conv) => {
     const q = messageSearch.trim().toLowerCase();
-    if (!q) return true;
     const name = String(conv.name || '').toLowerCase();
     const lastMessage = String(conv.lastMessage || '').toLowerCase();
-    return name.includes(q) || lastMessage.includes(q);
+    const searchOk = !q || name.includes(q) || lastMessage.includes(q);
+    if (!searchOk) return false;
+
+    if (messageListFilter === 'unread') return Number(conv.unread || 0) > 0;
+    if (messageListFilter === 'pinned') return pinnedConversations.includes(String(conv.userId));
+    return true;
   }).sort((a, b) => {
     const aPinned = pinnedConversations.includes(String(a.userId));
     const bPinned = pinnedConversations.includes(String(b.userId));
@@ -2234,7 +2242,7 @@ export default function Feed() {
             <I.plus width="14" height="14" /> {isMobile ? 'New' : 'Publier'}
           </button>
           {/* MESSAGES */}
-          <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); setMessageSearch(''); fetchConversations(); }}>
+          <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); setMessageSearch(''); setMessageListFilter('all'); fetchConversations(); }}>
             <I.chat width="17" height="17" style={{ color:textMuted }} />
             {totalUnread > 0 && <span className="badge-dot">{totalUnread}</span>}
           </div>
@@ -3240,6 +3248,39 @@ export default function Feed() {
                     onChange={(e) => setMessageSearch(e.target.value)}
                     style={{ width:'100%', padding:'9px 12px', border:`1.5px solid ${borderStrong}`, borderRadius:'12px', outline:'none', fontSize:'0.82rem', color:text, background:darkMode?'rgba(255,255,255,0.05)':'white' }}
                   />
+                  <div style={{ marginTop:'9px', display:'flex', gap:'7px', flexWrap:'wrap' }}>
+                    {[
+                      { key:'all', label:'All', count:conversations.length },
+                      { key:'unread', label:'Unread', count:unreadConversationCount },
+                      { key:'pinned', label:'Pinned', count:pinnedConversationCount },
+                    ].map((f) => {
+                      const isActive = messageListFilter === f.key;
+                      return (
+                        <button
+                          key={f.key}
+                          onClick={() => setMessageListFilter(f.key)}
+                          style={{
+                            border:`1px solid ${isActive ? '#ea580c' : borderStrong}`,
+                            background:isActive ? '#fff7ed' : (darkMode ? 'rgba(255,255,255,0.03)' : 'white'),
+                            color:isActive ? '#c2410c' : textMuted,
+                            borderRadius:'999px',
+                            height:'28px',
+                            padding:'0 10px',
+                            fontSize:'0.73rem',
+                            fontWeight:'700',
+                            cursor:'pointer',
+                            display:'inline-flex',
+                            alignItems:'center',
+                            gap:'6px'
+                          }}
+                          title={`Filtre ${f.label}`}
+                        >
+                          <span>{f.label}</span>
+                          <span style={{ minWidth:'16px', height:'16px', borderRadius:'999px', background:isActive ? '#ea580c' : (darkMode ? '#334155' : '#e2e8f0'), color:'white', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'10px', padding:'0 4px' }}>{f.count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 {conversations.length===0 && <div style={{ padding:'50px 20px', textAlign:'center', color:textMuted }}><I.chat width="36" height="36" style={{color:'#e2e8f0',margin:'0 auto 12px',display:'block'}}/><p style={{ margin:0, fontWeight:'600', fontSize:'0.85rem' }}>Pas encore de messages</p></div>}
                 {conversations.length>0 && filteredConversationsList.length===0 && <div style={{ padding:'34px 18px', textAlign:'center', color:textMuted, fontSize:'0.82rem', fontWeight:'600' }}>Aucune conversation trouvée</div>}
