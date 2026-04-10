@@ -96,10 +96,10 @@ const IArrow = () => (
 // 2. L-COMPOSANT DYALK KAY-BDA HNA 👇
 export default function Profil() {
   const navigate = useNavigate();
-  const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth <= 900 : false);
+  const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' ? window.innerWidth <= 1100 : false);
 
   useEffect(() => {
-    const onResize = () => setIsMobileView(window.innerWidth <= 900);
+    const onResize = () => setIsMobileView(window.innerWidth <= 1100);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);

@@ -412,7 +412,7 @@ export default function Login() {
   const isVerificationStep = mode === 'login' && !!pendingVerificationEmail;
 
   return (
-    <div className="sc-login-root" style={{ width: '100vw', height: '100vh', display: 'flex', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', position: 'relative' }}>
+    <div className="sc-login-root" style={{ width: '100%', minHeight: '100dvh', height: 'auto', display: 'flex', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', position: 'relative' }}>
       <style>{`
         *{box-sizing:border-box}
         body,html{margin:0!important;padding:0!important;overflow:hidden;background:#0b1120}
@@ -433,7 +433,7 @@ export default function Login() {
         .sc-btn:active:not(:disabled){transform:scale(0.98)!important}
         .sc-eye:hover{color:#ea580c!important}
 
-        @media (max-width: 900px){
+        @media (max-width: 1100px){
           body,html{overflow:auto;background:#f8fafc}
           .sc-login-root{height:auto!important;min-height:100vh!important;overflow:visible!important}
           .sc-left-panel{display:none!important}
