@@ -103,7 +103,7 @@ const UserSchema = new mongoose.Schema({
     visitorsOk:  { type: Boolean, default: true },
     hidePhone:   { type: Boolean, default: false },
     onlineStatus:{ type: Boolean, default: true },
-    emailAlerts: { type: Boolean, default: true },
+    emailAlerts: { type: Boolean, default: false },
     darkMode:    { type: Boolean, default: false },
   },
 

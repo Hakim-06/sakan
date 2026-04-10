@@ -242,7 +242,7 @@ router.post('/favorites/:annonceId', protect, async (req, res) => {
     const user = await User.findById(req.user._id);
     const { annonceId } = req.params;
 
-    const idx = user.favorites.indexOf(annonceId);
+    const idx = user.favorites.findIndex((favId) => String(favId) === String(annonceId));
     let action;
     if (idx === -1) {
       user.favorites.push(annonceId);
@@ -253,7 +253,7 @@ router.post('/favorites/:annonceId', protect, async (req, res) => {
     }
 
     await user.save({ validateBeforeSave: false });
-    res.json({ success: true, action, favorites: user.favorites });
+    res.json({ success: true, action, favorites: user.favorites.map((id) => String(id)) });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }

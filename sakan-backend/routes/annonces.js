@@ -1,10 +1,14 @@
 const express = require('express');
 const Annonce = require('../models/Annonce');
+const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 const { deleteFromCloudinary } = require('../middleware/upload');
 const { sortAnnoncesByCompatibility } = require('../utils/matching');
+const { sendEmail } = require('../utils/mailer');
 
 const router = express.Router();
+
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // 1. GET ALL ANNONCES
 router.get('/', protect, async (req, res) => {
@@ -90,6 +94,42 @@ router.post('/', protect, async (req, res) => {
     });
 
     await annonce.populate('owner', 'name age gender ecole city budget bio photo isOnline lastSeen traits preferences profileComplete');
+
+    // Best effort: notify users in the same city who enabled email alerts.
+    try {
+      const cityPattern = new RegExp(`^${escapeRegex(city)}$`, 'i');
+      const recipients = await User.find({
+        _id: { $ne: userId },
+        city: cityPattern,
+        isVerified: true,
+        'preferences.emailAlerts': true,
+      }).select('email name').limit(100);
+
+      if (recipients.length) {
+        const ownerName = annonce.owner?.name || 'Un utilisateur';
+        const subject = `Nouvelle annonce a ${city} - SakanCampus`;
+        await Promise.allSettled(
+          recipients.map((u) => sendEmail({
+            to: u.email,
+            subject,
+            text: `Salut ${u.name || ''}, nouvelle annonce a ${city}. Budget: ${Number(budget)} DH. Ouvre SakanCampus pour voir.`,
+            html: `
+              <div style="font-family:Arial,Helvetica,sans-serif;padding:16px;background:#f8fafc;color:#0f172a;">
+                <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+                  <h3 style="margin:0 0 8px;">Nouvelle annonce dans ta ville</h3>
+                  <p style="margin:0 0 8px;">Salut ${u.name || ''}, une nouvelle annonce vient d'etre publiee a <b>${city}</b>.</p>
+                  <p style="margin:0 0 8px;">Budget: <b>${Number(budget)} DH</b> • Publiee par ${ownerName}</p>
+                  <p style="margin:0;color:#64748b;font-size:13px;">Ouvre SakanCampus pour consulter les details.</p>
+                </div>
+              </div>
+            `,
+          }))
+        );
+      }
+    } catch (mailErr) {
+      console.error('ANNONCE ALERT EMAIL ERROR:', mailErr?.message || mailErr);
+    }
+
     res.status(201).json({ success: true, annonce });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

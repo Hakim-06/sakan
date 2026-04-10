@@ -395,7 +395,7 @@ export default function Feed() {
   const profileMenuRef = useRef(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('compte');
-  const [toggles, setToggles] = useState({ hidePhone:false, onlineStatus:true, emailAlerts:true });
+  const [toggles, setToggles] = useState({ hidePhone:false, onlineStatus:true, emailAlerts:false });
   const [settingsForm, setSettingsForm] = useState({
     email: '',
     currentPassword: '',
@@ -856,7 +856,7 @@ export default function Feed() {
       setToggles({
         hidePhone: !!preferences.hidePhone,
         onlineStatus: preferences.onlineStatus !== false,
-        emailAlerts: preferences.emailAlerts !== false,
+        emailAlerts: preferences.emailAlerts === true,
       });
 
       if (typeof preferences.darkMode === 'boolean') {
@@ -1339,6 +1339,10 @@ export default function Feed() {
         const data = await res.json();
         if (data.success && data.user) {
           setMyUserId(data.user._id || null);
+          const favoriteIds = Array.isArray(data.user.favorites)
+            ? data.user.favorites.map((fav) => String(fav?._id || fav)).filter(Boolean)
+            : [];
+          setFavorites(favoriteIds);
           setMyProfile({
             name:   data.user.name  || 'Utilisateur',
             age:    data.user.age   || 20,
@@ -1424,14 +1428,40 @@ export default function Feed() {
       showToast('Erreur suppression: ' + err.message, 'error');
     }
   };
-  const handleToggleFavorite = (e, id) => {
+  const handleToggleFavorite = async (e, id) => {
     e.stopPropagation();
     e.preventDefault();
-    setFavorites(prev => {
-      const isFav = prev.includes(id);
-      showToast(isFav ? 'Retiré des favoris' : 'Ajouté aux favoris ❤️', isFav ? 'info' : 'success');
-      return isFav ? prev.filter(f => f !== id) : [...prev, id];
-    });
+
+    const token = localStorage.getItem('sc_token');
+    if (!token) {
+      showToast("Connecte-toi d'abord", 'error');
+      return;
+    }
+
+    const prevFavs = [...favoritesRef.current];
+    const isFav = prevFavs.includes(id);
+    const optimistic = isFav ? prevFavs.filter((f) => f !== id) : [...prevFavs, id];
+    setFavorites(optimistic);
+
+    try {
+      const res = await fetch(`/api/users/favorites/${id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Impossible de sauvegarder ce favori.');
+      }
+
+      const serverFavs = Array.isArray(data.favorites)
+        ? data.favorites.map((fav) => String(fav?._id || fav)).filter(Boolean)
+        : optimistic;
+      setFavorites(serverFavs);
+      showToast(data.action === 'removed' ? 'Retiré des favoris' : 'Ajouté aux favoris ❤️', data.action === 'removed' ? 'info' : 'success');
+    } catch (err) {
+      setFavorites(prevFavs);
+      showToast(err.message || 'Erreur favoris.', 'error');
+    }
   };
   const handleEditAdClick = (e, ad) => {
     e.stopPropagation();
