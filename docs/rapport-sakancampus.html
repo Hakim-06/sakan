@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rapport - SakanCampus</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --paper: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #ea580c;
+      --accent-2: #fb923c;
+      --line: #e2e8f0;
+      --shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, #fff7ed 0%, var(--bg) 35%);
+      color: var(--text);
+      font-family: "Segoe UI", "DM Sans", Arial, sans-serif;
+      line-height: 1.65;
+      padding: 34px 16px 70px;
+    }
+
+    .toolbar {
+      max-width: 920px;
+      margin: 0 auto 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 8px 18px rgba(234, 88, 12, 0.32);
+    }
+
+    .doc {
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .cover {
+      padding: 44px 48px 30px;
+      background: linear-gradient(150deg, #0f172a 0%, #1e293b 50%, #2d1b12 100%);
+      color: #fff;
+      position: relative;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      line-height: 1.15;
+      letter-spacing: -0.6px;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .meta {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .meta-card {
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+
+    .meta-k {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .meta-v {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .content {
+      padding: 28px 48px 44px;
+    }
+
+    h2 {
+      margin: 28px 0 10px;
+      color: #111827;
+      font-size: 1.22rem;
+      letter-spacing: -0.2px;
+      border-left: 4px solid var(--accent);
+      padding-left: 10px;
+    }
+
+    h3 {
+      margin: 16px 0 6px;
+      font-size: 1rem;
+      color: #1f2937;
+    }
+
+    p { margin: 0 0 10px; }
+
+    .muted { color: var(--muted); }
+
+    .toc {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .toc li {
+      margin: 5px 0;
+      font-size: 0.94rem;
+    }
+
+    ul {
+      margin: 8px 0 12px;
+      padding-left: 20px;
+    }
+
+    li { margin: 4px 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .panel b { color: #111827; }
+
+    .footer {
+      margin-top: 24px;
+      border-top: 1px dashed var(--line);
+      padding-top: 14px;
+      font-size: 0.84rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 820px) {
+      .cover { padding: 28px 20px 20px; }
+      .content { padding: 20px; }
+      .meta { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.65rem; }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .toolbar { display: none; }
+      .doc {
+        max-width: none;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .cover {
+        page-break-after: avoid;
+      }
+      h2 { page-break-after: avoid; }
+      .panel, .toc { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn" onclick="window.print()">Telecharger en PDF</button>
+  </div>
+
+  <article class="doc">
+    <section class="cover">
+      <span class="badge">Rapport de Projet - SakanCampus</span>
+      <h1>Plateforme intelligente de recherche de logement et de colocation etudiante au Maroc</h1>
+      <p class="subtitle">Document technique et fonctionnel - version prete pour impression / export PDF</p>
+
+      <div class="meta">
+        <div class="meta-card">
+          <span class="meta-k">Projet</span>
+          <span class="meta-v">SakanCampus</span>
+        </div>
+        <div class="meta-card">
+          <span class="meta-k">Type</span>
+          <span class="meta-v">Application Web Full-Stack</span>
+        </div>
+        <div class="meta-card">
+          <span class="meta-k">Date</span>
+          <span class="meta-v">Avril 2026</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="content">
+      <h2>1. Introduction</h2>
+      <p>
+        SakanCampus est une plateforme web concue pour repondre a un besoin concret: faciliter la recherche de logement
+        et de colocation pour les etudiants au Maroc. Le projet centralise les annonces, la communication entre utilisateurs,
+        la gestion de profil et des fonctions intelligentes d'aide a la decision.
+      </p>
+      <p>
+        L'objectif principal est d'offrir une experience moderne, fluide et fiable sur ordinateur et mobile,
+        tout en reduisant les frictions habituelles: manque d'information claire, difficultes de matching,
+        lenteur des echanges et absence d'un espace unifie.
+      </p>
+
+      <h2>2. Sommaire du rapport</h2>
+      <div class="toc">
+        <ol>
+          <li>Introduction et contexte</li>
+          <li>Objectifs de la plateforme</li>
+          <li>Technologies utilisees</li>
+          <li>Architecture generale</li>
+          <li>Fonctionnalites principales</li>
+          <li>Securite et fiabilite</li>
+          <li>Resultats et conclusion</li>
+        </ol>
+      </div>
+
+      <h2>3. Objectifs de la plateforme</h2>
+      <ul>
+        <li>Faciliter la publication et la consultation d'annonces de logement.</li>
+        <li>Permettre un matching plus pertinent via profil, budget, ville et preferences.</li>
+        <li>Offrir une messagerie integree pour accelerer la prise de contact.</li>
+        <li>Garantir une experience responsive, rapide et exploitable sur mobile.</li>
+        <li>Integrer une assistance IA pour guider les utilisateurs dans leurs choix.</li>
+      </ul>
+
+      <h2>4. Technologies utilisees</h2>
+      <div class="grid">
+        <div class="panel">
+          <b>Frontend</b>
+          <ul>
+            <li>React</li>
+            <li>Vite</li>
+            <li>React Router</li>
+            <li>CSS custom + design responsive</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <b>Backend</b>
+          <ul>
+            <li>Node.js</li>
+            <li>Express.js</li>
+            <li>JWT (authentification)</li>
+            <li>Nodemailer (emails)</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <b>Data & Services</b>
+          <ul>
+            <li>MongoDB + Mongoose</li>
+            <li>Cloudinary (images)</li>
+            <li>OpenAI / Gemini (assistant IA)</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <b>Deploiement</b>
+          <ul>
+            <li>Vercel (frontend + API route)</li>
+            <li>Configuration env vars</li>
+            <li>Build CI simple via GitHub</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>5. Architecture generale</h2>
+      <h3>5.1 Couche presentation (Frontend)</h3>
+      <p>
+        L'interface est construite autour de pages React (Login, Profil, Feed, VerifyEmail), avec navigation dynamique,
+        composants reutilisables et interactions optimises pour le tactile.
+      </p>
+
+      <h3>5.2 Couche logique (Backend API)</h3>
+      <p>
+        L'API Express gere l'authentification, les annonces, les messages, les uploads et les operations IA.
+        Les routes sont proteges via JWT selon le role et l'etat de connexion.
+      </p>
+
+      <h3>5.3 Couche donnees</h3>
+      <p>
+        MongoDB stocke les utilisateurs, annonces et conversations. Les schemas Mongoose imposent la structure,
+        les validations et les defaults necessaires a la coherence de la plateforme.
+      </p>
+
+      <h2>6. Fonctionnalites principales</h2>
+      <ul>
+        <li>Inscription / connexion classique + connexion Google.</li>
+        <li>Verification email par code OTP.</li>
+        <li>Reset mot de passe par code OTP.</li>
+        <li>Gestion complete du profil utilisateur.</li>
+        <li>Publication d'annonce avec photos.</li>
+        <li>Favoris persistants et matching filtre.</li>
+        <li>Messagerie interne avec etat de lecture.</li>
+        <li>Assistant IA contextuel (prix, villes, filtres, conseils).</li>
+      </ul>
+
+      <h2>7. Securite et fiabilite</h2>
+      <ul>
+        <li>Authentification securisee via JWT.</li>
+        <li>Endpoints sensibles proteges par middleware auth.</li>
+        <li>Fallback IA pour garantir une reponse meme en cas d'echec provider.</li>
+        <li>Gestion des erreurs UX pour eviter les blocages utilisateur.</li>
+      </ul>
+
+      <h2>8. Conclusion</h2>
+      <p>
+        SakanCampus est un projet full-stack complet, orientee impact utilisateur, qui combine experience mobile moderne,
+        outils de mise en relation et assistance intelligente. La plateforme est exploitable en production et evolutive
+        vers des fonctionnalites avancees (temps reel, recommandations plus fines, analytics, etc.).
+      </p>
+      <p class="muted">
+        Ce document est deja mis en forme pour impression. Clique sur "Telecharger en PDF" pour exporter une version finale.
+      </p>
+
+      <div class="footer">
+        Rapport genere pour SakanCampus - 2026
+      </div>
+    </section>
+  </article>
+</body>
+</html>
