@@ -467,6 +467,15 @@ export default function Feed() {
   ]);
   const [activeConvId, setActiveConvId] = useState(null);
   const [messageSearch, setMessageSearch] = useState('');
+  const [pinnedConversations, setPinnedConversations] = useState(() => {
+    try {
+      const raw = localStorage.getItem('sc_pinned_conversations') || '[]';
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.map((v) => String(v)) : [];
+    } catch {
+      return [];
+    }
+  });
   const [newMessage, setNewMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -477,6 +486,10 @@ export default function Feed() {
   const aiPanelRef = useRef(null);
   const aiMessagesEndRef = useRef(null);
   const [conversations, setConversations] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem('sc_pinned_conversations', JSON.stringify(pinnedConversations));
+  }, [pinnedConversations]);
 
   // ── THEME VARS ──
   const bg = darkMode?'#0b1120':'#f8fafc';
@@ -1856,6 +1869,11 @@ export default function Feed() {
     const name = String(conv.name || '').toLowerCase();
     const lastMessage = String(conv.lastMessage || '').toLowerCase();
     return name.includes(q) || lastMessage.includes(q);
+  }).sort((a, b) => {
+    const aPinned = pinnedConversations.includes(String(a.userId));
+    const bPinned = pinnedConversations.includes(String(b.userId));
+    if (aPinned === bPinned) return 0;
+    return aPinned ? -1 : 1;
   });
   const hasPriceFilter = !!priceMin || !!priceMax;
   const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
@@ -3194,7 +3212,21 @@ export default function Feed() {
                     </div>
                 }
               </div>
-              <button onClick={()=>{setIsMessagesOpen(false);setActiveConvId(null);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex' }}><I.x width="16" height="16"/></button>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                {activeConvId && activeChat && (
+                  <button
+                    onClick={() => {
+                      const uid = String(activeChat.userId);
+                      setPinnedConversations((prev) => prev.includes(uid) ? prev.filter((v) => v !== uid) : [uid, ...prev]);
+                    }}
+                    style={{ background:'none', border:'none', cursor:'pointer', color:pinnedConversations.includes(String(activeChat.userId))?'#ea580c':textMuted, display:'flex' }}
+                    title={pinnedConversations.includes(String(activeChat.userId)) ? 'Retirer de favoris messages' : 'Epingler conversation'}
+                  >
+                    <I.pin width="15" height="15" />
+                  </button>
+                )}
+                <button onClick={()=>{setIsMessagesOpen(false);setActiveConvId(null);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex' }}><I.x width="16" height="16"/></button>
+              </div>
             </div>
 
             {!activeConvId ? (
@@ -3221,11 +3253,25 @@ export default function Feed() {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
-                        <span style={{ fontWeight:conv.unread>0?'800':'700', color:text, fontSize:'0.86rem' }}>{conv.name}</span>
+                        <span style={{ fontWeight:conv.unread>0?'800':'700', color:text, fontSize:'0.86rem', display:'flex', alignItems:'center', gap:'6px' }}>
+                          {conv.name}
+                          {pinnedConversations.includes(String(conv.userId)) && <I.pin width="11" height="11" style={{ color:'#ea580c' }} />}
+                        </span>
                         <span style={{ fontSize:'0.7rem', color:textMuted }}>{conv.time}</span>
                       </div>
                       <p style={{ margin:0, fontSize:'0.78rem', color:conv.unread>0?text:textMuted, fontWeight:conv.unread>0?'700':'500', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{conv.lastMessage||'...'}</p>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const uid = String(conv.userId);
+                        setPinnedConversations((prev) => prev.includes(uid) ? prev.filter((v) => v !== uid) : [uid, ...prev]);
+                      }}
+                      style={{ background:'transparent', border:'none', color:pinnedConversations.includes(String(conv.userId))?'#ea580c':textMuted, cursor:'pointer', display:'flex', padding:0 }}
+                      title={pinnedConversations.includes(String(conv.userId)) ? 'Retirer epingle' : 'Epingler conversation'}
+                    >
+                      <I.pin width="13" height="13" />
+                    </button>
                     {conv.unread>0 && <span style={{ background:'#ea580c', color:'white', fontSize:'10px', fontWeight:'800', width:'18px', height:'18px', display:'flex', justifyContent:'center', alignItems:'center', borderRadius:'50%', flexShrink:0, animation:'popIn 0.3s cubic-bezier(0.16,1,0.3,1)' }}>{conv.unread}</span>}
                   </div>
                 ))}
@@ -3262,7 +3308,12 @@ export default function Feed() {
                           </div>
                           <span style={{ fontSize:'0.66rem', color:textMuted, marginTop:'3px', padding:'0 2px' }}>
                             {msg.time}
-                            {showSeen ? ` · ${msg.isRead ? 'Vu' : 'Envoye'}` : ''}
+                            {showSeen && msg.sender === 'me' && (
+                              <span style={{ marginLeft:'6px', color: msg.isRead ? '#22c55e' : '#94a3b8', display:'inline-flex', alignItems:'center', gap:'2px' }}>
+                                <I.check width="11" height="11" />
+                                {msg.isRead ? <I.check width="11" height="11" style={{ marginLeft:'-7px' }} /> : null}
+                              </span>
+                            )}
                           </span>
                         </div>
                       );
