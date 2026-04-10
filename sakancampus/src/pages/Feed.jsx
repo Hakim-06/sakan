@@ -466,6 +466,7 @@ export default function Feed() {
     },
   ]);
   const [activeConvId, setActiveConvId] = useState(null);
+  const [messageSearch, setMessageSearch] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -1849,6 +1850,13 @@ export default function Feed() {
   const filteredFavoris = annonces.filter(p => favorites.includes(p.id));
   const filteredCities = moroccanCities.filter(c => c.toLowerCase().includes(searchCity.toLowerCase()));
   const activeChat = conversations.find(c => String(c.userId) === String(activeConvId));
+  const filteredConversationsList = conversations.filter((conv) => {
+    const q = messageSearch.trim().toLowerCase();
+    if (!q) return true;
+    const name = String(conv.name || '').toLowerCase();
+    const lastMessage = String(conv.lastMessage || '').toLowerCase();
+    return name.includes(q) || lastMessage.includes(q);
+  });
   const hasPriceFilter = !!priceMin || !!priceMax;
   const activeFiltersCount = Number(!!searchCity) + Number(!!priceMin || !!priceMax);
   const isMobile = isAiCompactMobile;
@@ -2207,7 +2215,7 @@ export default function Feed() {
             <I.plus width="14" height="14" /> {isMobile ? 'New' : 'Publier'}
           </button>
           {/* MESSAGES */}
-          <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); fetchConversations(); }}>
+          <div className="icon-btn" onClick={() => { setIsMessagesOpen(true); setActiveConvId(null); setMessageSearch(''); fetchConversations(); }}>
             <I.chat width="17" height="17" style={{ color:textMuted }} />
             {totalUnread > 0 && <span className="badge-dot">{totalUnread}</span>}
           </div>
@@ -3191,8 +3199,18 @@ export default function Feed() {
 
             {!activeConvId ? (
               <div style={{ flex:1, overflowY:'auto' }}>
+                <div style={{ padding:'10px 12px', borderBottom:`1px solid ${border}` }}>
+                  <input
+                    type="text"
+                    placeholder="Rechercher une conversation..."
+                    value={messageSearch}
+                    onChange={(e) => setMessageSearch(e.target.value)}
+                    style={{ width:'100%', padding:'9px 12px', border:`1.5px solid ${borderStrong}`, borderRadius:'12px', outline:'none', fontSize:'0.82rem', color:text, background:darkMode?'rgba(255,255,255,0.05)':'white' }}
+                  />
+                </div>
                 {conversations.length===0 && <div style={{ padding:'50px 20px', textAlign:'center', color:textMuted }}><I.chat width="36" height="36" style={{color:'#e2e8f0',margin:'0 auto 12px',display:'block'}}/><p style={{ margin:0, fontWeight:'600', fontSize:'0.85rem' }}>Pas encore de messages</p></div>}
-                {conversations.map(conv=>(
+                {conversations.length>0 && filteredConversationsList.length===0 && <div style={{ padding:'34px 18px', textAlign:'center', color:textMuted, fontSize:'0.82rem', fontWeight:'600' }}>Aucune conversation trouvée</div>}
+                {filteredConversationsList.map(conv=>(
                   <div key={conv.id} onClick={()=>setActiveConvId(conv.userId)}
                     style={{ padding:'13px 16px', display:'flex', alignItems:'center', gap:'11px', cursor:'pointer', borderBottom:`1px solid ${border}`, transition:'background 0.15s' }}
                     onMouseOver={e=>e.currentTarget.style.background=surfaceHover}
@@ -3203,10 +3221,10 @@ export default function Feed() {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
-                        <span style={{ fontWeight:'700', color:text, fontSize:'0.86rem' }}>{conv.name}</span>
+                        <span style={{ fontWeight:conv.unread>0?'800':'700', color:text, fontSize:'0.86rem' }}>{conv.name}</span>
                         <span style={{ fontSize:'0.7rem', color:textMuted }}>{conv.time}</span>
                       </div>
-                      <p style={{ margin:0, fontSize:'0.78rem', color:textMuted, overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{conv.lastMessage||'...'}</p>
+                      <p style={{ margin:0, fontSize:'0.78rem', color:conv.unread>0?text:textMuted, fontWeight:conv.unread>0?'700':'500', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>{conv.lastMessage||'...'}</p>
                     </div>
                     {conv.unread>0 && <span style={{ background:'#ea580c', color:'white', fontSize:'10px', fontWeight:'800', width:'18px', height:'18px', display:'flex', justifyContent:'center', alignItems:'center', borderRadius:'50%', flexShrink:0, animation:'popIn 0.3s cubic-bezier(0.16,1,0.3,1)' }}>{conv.unread}</span>}
                   </div>
