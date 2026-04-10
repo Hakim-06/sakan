@@ -457,6 +457,7 @@ export default function Feed() {
   const [aiInput, setAiInput] = useState('');
   const [aiIsTyping, setAiIsTyping] = useState(false);
   const [aiRuntimeMode, setAiRuntimeMode] = useState('local');
+  const [aiRuntimeLabel, setAiRuntimeLabel] = useState('');
   const [isAiCompactMobile, setIsAiCompactMobile] = useState(window.innerWidth < 700);
   const [aiMessages, setAiMessages] = useState([
     {
@@ -802,7 +803,8 @@ export default function Feed() {
 
     try {
       const backendData = await askAiBackend(textToSend);
-      setAiRuntimeMode(backendData.mode === 'fallback-local' ? 'local' : 'backend');
+      setAiRuntimeMode('backend');
+      setAiRuntimeLabel(backendData.mode === 'fallback-local' ? 'fallback' : '');
       const assistantMsg = {
         id: Date.now() + Math.random(),
         role: 'assistant',
@@ -812,6 +814,7 @@ export default function Feed() {
       setAiMessages(prev => [...prev, assistantMsg]);
     } catch {
       setAiRuntimeMode('local');
+      setAiRuntimeLabel('');
       const assistantMsg = {
         id: Date.now() + Math.random(),
         role: 'assistant',
@@ -2651,7 +2654,9 @@ export default function Feed() {
                   <div style={{ fontWeight:'900', fontSize:'0.95rem', color:text, letterSpacing:'0.2px' }}>Sakan AI</div>
                   <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'2px' }}>
                     <span style={{ width:'7px', height:'7px', borderRadius:'50%', background: aiRuntimeMode === 'backend' ? '#22c55e' : '#f59e0b' }} />
-                    <span style={{ fontSize:'0.72rem', color:textMuted, fontWeight:'700', whiteSpace:'nowrap' }}>Mode: {aiRuntimeMode === 'backend' ? 'IA' : 'Local'}</span>
+                    <span style={{ fontSize:'0.72rem', color:textMuted, fontWeight:'700', whiteSpace:'nowrap' }}>
+                      Mode: {aiRuntimeMode === 'backend' ? `IA${aiRuntimeLabel === 'fallback' ? ' (fallback)' : ''}` : 'Local'}
+                    </span>
                   </div>
                 </div>
               </div>
