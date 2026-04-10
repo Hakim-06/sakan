@@ -1087,17 +1087,20 @@ export default function Feed() {
           messages: oldById.get(String(c.userId))?.messages || [],
         }));
 
-        // Keep locally-created conversations (no messages yet) so the drawer
-        // does not lose the selected contact before the first message is sent.
+        // Keep only the active local draft while the user is composing.
         const existingIds = new Set(mappedWithCache.map(c => String(c.userId)));
-        const pendingLocal = prev.filter(c => !existingIds.has(String(c.userId)));
+        const pendingLocal = prev.filter(c => (
+          c.isDraftConversation &&
+          String(c.userId) === String(activeConvId) &&
+          !existingIds.has(String(c.userId))
+        ));
 
         return [...mappedWithCache, ...pendingLocal];
       });
     } catch {
       // Ignore transient polling failures.
     }
-  }, []);
+  }, [activeConvId]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadMessagesWithUser = useCallback(async (userId, refreshList = true) => {
@@ -1121,6 +1124,7 @@ export default function Feed() {
               ...c,
               messages: mappedMessages,
               unread: 0,
+              isDraftConversation: mappedMessages.length > 0 ? false : !!c.isDraftConversation,
               lastMessage: mappedMessages[mappedMessages.length - 1]?.text || c.lastMessage,
               time: mappedMessages[mappedMessages.length - 1]?.time || c.time,
             };
@@ -1129,6 +1133,7 @@ export default function Feed() {
         });
 
         if (found) return updated;
+        if (mappedMessages.length === 0) return updated;
 
         return [{
           id: String(userId),
@@ -1138,6 +1143,7 @@ export default function Feed() {
           isOnline: false,
           lastSeen: null,
           unread: 0,
+          isDraftConversation: false,
           lastMessage: mappedMessages[mappedMessages.length - 1]?.text || '',
           time: mappedMessages[mappedMessages.length - 1]?.time || '',
           messages: mappedMessages,
@@ -1717,6 +1723,7 @@ export default function Feed() {
       setConversations(prev => prev.map(c => String(c.userId) === String(activeConvId)
         ? {
             ...c,
+            isDraftConversation: false,
             messages: [...(c.messages || []), mappedLocalMsg],
             lastMessage: mappedLocalMsg.text,
             time: mappedLocalMsg.time,
@@ -1735,6 +1742,16 @@ export default function Feed() {
     }
   };
 
+  const removeEmptyDraftConversation = useCallback((targetId) => {
+    if (!targetId) return;
+    setConversations((prev) => prev.filter((c) => {
+      if (String(c.userId) !== String(targetId)) return true;
+      const noLastMessage = !String(c.lastMessage || '').trim();
+      const noMessages = !Array.isArray(c.messages) || c.messages.length === 0;
+      return !(c.isDraftConversation && noLastMessage && noMessages);
+    }));
+  }, []);
+
   const handleContact = (profile) => {
     const rawTarget = profile.ownerId || profile.userId;
     const targetId = rawTarget ? String(rawTarget) : '';
@@ -1752,6 +1769,7 @@ export default function Feed() {
         image: profile.image,
         isOnline: !!profile.isOnline,
         unread: 0,
+        isDraftConversation: true,
         lastMessage: '',
         time: '',
         messages: [],
@@ -3195,12 +3213,12 @@ export default function Feed() {
           MESSAGERIE DRAWER
       ══════════════════════════════════════════════ */}
       {isMessagesOpen && (
-        <div className="mobile-msg-overlay" style={{ position:'fixed', inset:0, background:'rgba(8,15,30,0.6)', zIndex:5000, display:'flex', justifyContent:'flex-end' }} data-backdrop="true" onMouseDown={e=>{e.currentTarget._mdOnBg = (e.target === e.currentTarget);}} onMouseUp={e=>{if(e.currentTarget._mdOnBg && e.target===e.currentTarget){setIsMessagesOpen(false);setActiveConvId(null);} e.currentTarget._mdOnBg=false;}}>
+        <div className="mobile-msg-overlay" style={{ position:'fixed', inset:0, background:'rgba(8,15,30,0.6)', zIndex:5000, display:'flex', justifyContent:'flex-end' }} data-backdrop="true" onMouseDown={e=>{e.currentTarget._mdOnBg = (e.target === e.currentTarget);}} onMouseUp={e=>{if(e.currentTarget._mdOnBg && e.target===e.currentTarget){removeEmptyDraftConversation(activeConvId);setIsMessagesOpen(false);setActiveConvId(null);} e.currentTarget._mdOnBg=false;}}>
           <div className="mobile-msg-sheet" style={{ width:isMobile?'100vw':'330px', maxWidth:'100vw', height:'100%', background:surface, boxShadow:`-20px 0 50px rgba(0,0,0,${darkMode?'0.4':'0.15'})`, display:'flex', flexDirection:'column', animation:'drawerIn 0.3s cubic-bezier(0.16,1,0.3,1)', borderLeft:`1px solid ${border}` }}>
             {/* HEADER */}
             <div style={{ padding:'16px 18px', borderBottom:`1px solid ${border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                {activeConvId && activeChat && <button onClick={()=>setActiveConvId(null)} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex', padding:0, transition:'color 0.2s' }}><I.arrow width="18" height="18"/></button>}
+                {activeConvId && activeChat && <button onClick={()=>{removeEmptyDraftConversation(activeConvId);setActiveConvId(null);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex', padding:0, transition:'color 0.2s' }}><I.arrow width="18" height="18"/></button>}
                 {activeConvId && activeChat
                   ? <div style={{ display:'flex', alignItems:'center', gap:'9px' }}>
                       <div style={{ position:'relative' }}>
@@ -3234,7 +3252,7 @@ export default function Feed() {
                     <I.pushpin width="15" height="15" />
                   </button>
                 )}
-                <button onClick={()=>{setIsMessagesOpen(false);setActiveConvId(null);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex' }}><I.x width="16" height="16"/></button>
+                <button onClick={()=>{removeEmptyDraftConversation(activeConvId);setIsMessagesOpen(false);setActiveConvId(null);}} style={{ background:'none', border:'none', cursor:'pointer', color:textMuted, display:'flex' }}><I.x width="16" height="16"/></button>
               </div>
             </div>
 
