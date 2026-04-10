@@ -2026,7 +2026,7 @@ export default function Feed() {
 
     /* TRAIT/AMENITY BUTTONS */
     .trait-btn{padding:7px 12px;border-radius:20px;font-size:0.79rem;font-weight:700;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);border:1.5px solid ${borderStrong};background:${surface};color:${textMuted};font-family:inherit;display:flex;align-items:center;gap:5px}
-    .trait-btn:hover:not(.on){border-color:#ea580c;color:#ea580c;transform:scale(1.04)}
+    @media (hover:hover) and (pointer:fine){.trait-btn:hover:not(.on){border-color:#ea580c;color:#ea580c;transform:scale(1.04)}}
     .trait-btn.on{background:linear-gradient(135deg,#ea580c,#f97316);border-color:#ea580c;color:white;box-shadow:0 4px 12px rgba(234,88,12,0.3);transform:scale(1.04)}
 
     /* DETAIL LAYOUT */
@@ -3126,7 +3126,7 @@ export default function Feed() {
                     const isOn = editProfile.traits?.includes(trait.label);
                     const Ic = I[trait.iconKey];
                     return (
-                      <button key={trait.label} className={`trait-btn ${isOn?'on':''}`}
+                      <button type="button" key={trait.label} className={`trait-btn ${isOn?'on':''}`}
                         onClick={()=>setEditProfile(prev=>{
                           if(isOn) return{...prev,traits:prev.traits.filter(t=>t!==trait.label)};
                           if(prev.traits?.length>=4) return prev;

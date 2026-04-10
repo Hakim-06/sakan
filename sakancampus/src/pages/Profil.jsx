@@ -325,8 +325,10 @@ export default function Profil() {
         @keyframes scaleIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
         .pr-inp::placeholder{color:#94a3b8}
         .pr-tag{transition:all 0.2s cubic-bezier(0.16,1,0.3,1);cursor:pointer;user-select:none}
-        .pr-tag:hover:not(.on){transform:translateY(-2px);box-shadow:0 4px 12px rgba(234,88,12,0.15)!important;border-color:#ea580c!important;color:#ea580c!important}
-        .pr-city:hover{background:#fef7f4;color:#ea580c;padding-left:20px}
+        @media (hover:hover) and (pointer:fine){
+          .pr-tag:hover:not(.on){transform:translateY(-2px);box-shadow:0 4px 12px rgba(234,88,12,0.15)!important;border-color:#ea580c!important;color:#ea580c!important}
+          .pr-city:hover{background:#fef7f4;color:#ea580c;padding-left:20px}
+        }
         .pr-submit:hover:not(:disabled){transform:translateY(-2px)!important;box-shadow:0 14px 32px rgba(234,88,12,0.45)!important}
         .pr-submit:active:not(:disabled){transform:scale(0.98)!important}
         .pr-photo:hover .pr-photo-overlay{opacity:1!important}
@@ -573,10 +575,10 @@ export default function Profil() {
               {tags.map(t=>{
                 const on = selTags.includes(t.id);
                 return (
-                  <span key={t.id} className={`pr-tag ${on?'on':''}`} onClick={()=>toggleTag(t.id)}
+                  <button type="button" key={t.id} className={`pr-tag ${on?'on':''}`} onClick={()=>toggleTag(t.id)}
                     style={{ padding:'8px 14px', borderRadius:'20px', background: on ? '#ea580c' : 'white', color: on ? 'white' : '#475569', border:`1.5px solid ${on?'#ea580c':'#e2e8f0'}`, fontWeight:'700', fontSize:'0.8rem', boxShadow: on ? '0 4px 12px rgba(234,88,12,0.3)' : 'none', transform: on ? 'scale(1.04)' : 'scale(1)' }}>
                     {t.label}
-                  </span>
+                  </button>
                 );
               })}
             </div>
