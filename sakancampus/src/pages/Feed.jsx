@@ -370,6 +370,7 @@ const Overlay = ({ children, onClose, zIndex=9998 }) => {
 // ═══════════════════════════════════════════════════════════════
 export default function Feed() {
   const navigate = useNavigate();
+  const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=SC&background=ea580c&color=fff&size=256';
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('toutes');
@@ -407,12 +408,26 @@ export default function Feed() {
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isMyProfileOpen, setIsMyProfileOpen] = useState(false);
-  const [myProfile, setMyProfile] = useState({
-    name:"Oussama", age:21, ecole:"ENCG Settat", city:"Settat",
-    budget:1500, gender:"Homme", traits:["Calme","Studieux"],
-    bio:"Étudiant en 3ème année, je cherche un endroit calme et propre pour étudier.",
-    phone:"+212 6XX XXX XXX",
-    image:"https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80"
+  const [myProfile, setMyProfile] = useState(() => {
+    let cachedUser = {};
+    try {
+      cachedUser = JSON.parse(localStorage.getItem('sc_user') || '{}') || {};
+    } catch {
+      cachedUser = {};
+    }
+
+    return {
+      name: cachedUser.name || '',
+      age: cachedUser.age || '',
+      ecole: cachedUser.ecole || '',
+      city: cachedUser.city || '',
+      budget: cachedUser.budget || '',
+      gender: cachedUser.gender || '',
+      traits: Array.isArray(cachedUser.traits) ? cachedUser.traits : [],
+      bio: cachedUser.bio || '',
+      phone: cachedUser.phone || '',
+      image: cachedUser.photo?.url || cachedUser.photo || DEFAULT_AVATAR,
+    };
   });
   const [editProfile, setEditProfile] = useState(null);
   const [annonces, setAnnonces] = useState([]);
