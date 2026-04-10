@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm --prefix sakancampus run build",
+  "buildCommand": "npm install --prefix sakancampus && npm --prefix sakancampus run build",
   "outputDirectory": "sakancampus/dist",
   "functions": {
     "api/index.js": {
