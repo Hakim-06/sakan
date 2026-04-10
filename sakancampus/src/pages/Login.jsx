@@ -5,6 +5,7 @@ import { GoogleLogin } from '@react-oauth/google';
 export default function Login() {
   const navigate = useNavigate();
   const hasGoogleClientId = Boolean(String(import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim());
+  const [googleBtnWidth, setGoogleBtnWidth] = useState(() => String(Math.max(240, Math.min(360, window.innerWidth - 72))));
   const [mode, setMode]       = useState('login');
   const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +28,14 @@ export default function Login() {
     l.rel = 'stylesheet';
     l.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800;9..40,900&family=Playfair+Display:wght@700;800&display=swap';
     document.head.appendChild(l);
+  }, []);
+  useEffect(() => {
+    const onResize = () => {
+      const next = Math.max(240, Math.min(360, window.innerWidth - 72));
+      setGoogleBtnWidth(String(next));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -574,7 +583,7 @@ export default function Login() {
                     shape="pill"
                     size="large"
                     text="continue_with"
-                    width="320"
+                    width={googleBtnWidth}
                     logo_alignment="left"
                   />
                 </div>
