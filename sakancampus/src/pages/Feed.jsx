@@ -2061,6 +2061,7 @@ export default function Feed() {
     @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)}50%{box-shadow:0 0 0 5px rgba(34,197,94,0)}}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     @keyframes aiGlow{0%,100%{box-shadow:0 0 0 0 rgba(234,88,12,0.45)}50%{box-shadow:0 0 0 8px rgba(234,88,12,0)}}
+    @keyframes aiFabOpen{0%{transform:scale(0.9) rotate(-8deg)}60%{transform:scale(1.08) rotate(3deg)}100%{transform:scale(1.04) rotate(0deg)}}
     @keyframes typingDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
     @keyframes tabPanelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     @keyframes contactPanelLeft{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
@@ -2627,9 +2628,9 @@ export default function Feed() {
       )}
 
       {/* AI ASSISTANT */}
-      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?(isAiOpen?'calc(10px + env(safe-area-inset-bottom, 0px))':'calc(86px + env(safe-area-inset-bottom, 0px))'):'20px', zIndex:1200 }}>
+      <div ref={aiPanelRef} style={{ position:'fixed', right:isMobile?'10px':'20px', bottom:isMobile?'calc(86px + env(safe-area-inset-bottom, 0px))':'20px', zIndex:1200 }}>
         {isAiOpen && (
-          <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', marginBottom:isAiCompactMobile?'6px':'10px', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:'relative' }}>
+          <div style={{ width:isAiCompactMobile?'calc(100vw - 12px)':'350px', maxWidth:isAiCompactMobile?'calc(100vw - 12px)':'calc(100vw - 28px)', height:isAiCompactMobile?'74vh':'520px', background:surface, border:`1px solid ${borderStrong}`, borderRadius:isAiCompactMobile?'20px':'18px', boxShadow:`0 30px 70px rgba(0,0,0,${darkMode?'0.5':'0.18'})`, overflow:'hidden', display:'flex', flexDirection:'column', animation:'modalIn 0.25s cubic-bezier(0.16,1,0.3,1)', position:'absolute', right:0, bottom:isAiCompactMobile?'60px':'64px' }}>
             <div style={{ padding:'12px 14px', borderBottom:`1px solid ${border}`, background:darkMode?'linear-gradient(135deg,rgba(30,41,59,0.85),rgba(15,23,42,0.92))':'linear-gradient(135deg,#fff7ed,#ffffff)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                 <div style={{ width:'34px', height:'34px', borderRadius:'11px', background:'linear-gradient(135deg,#ea580c,#f97316)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', position:'relative', animation:'aiGlow 2.4s ease-in-out infinite' }}>
@@ -2706,7 +2707,7 @@ export default function Feed() {
 
         <button
           onClick={() => setIsAiOpen(v => !v)}
-          style={{ width:'54px', height:'54px', borderRadius:'17px', border:'none', background:'linear-gradient(135deg,#ea580c,#f97316)', color:'white', boxShadow:'0 12px 34px rgba(234,88,12,0.45)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', animation:'aiGlow 2.8s ease-in-out infinite' }}
+          style={{ width:'54px', height:'54px', borderRadius:'17px', border:'none', background:'linear-gradient(135deg,#ea580c,#f97316)', color:'white', boxShadow:isAiOpen?'0 16px 40px rgba(234,88,12,0.52)':'0 12px 34px rgba(234,88,12,0.45)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', animation:isAiOpen?'aiFabOpen 0.32s cubic-bezier(0.16,1,0.3,1), aiGlow 2.8s ease-in-out infinite':'aiGlow 2.8s ease-in-out infinite', transform:isAiOpen?'scale(1.04)':'scale(1)', transition:'transform 0.22s ease, box-shadow 0.22s ease' }}
         >
           <div style={{ position:'absolute', inset:'2px', borderRadius:'15px', border:'1px solid rgba(255,255,255,0.35)', pointerEvents:'none' }} />
           <I.bot width="22" height="22" />
