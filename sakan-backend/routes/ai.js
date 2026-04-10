@@ -123,51 +123,61 @@ const generateWithGeminiModels = async (prompt) => {
 };
 
 const generateWithOpenAI = async (prompt) => {
-  const key = process.env.OPENAI_API_KEY;
+  const key = String(process.env.OPENAI_API_KEY || '').trim();
   if (!key) {
     throw new Error('OPENAI_API_KEY manqosa.');
   }
 
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const preferred = String(process.env.OPENAI_MODEL || 'gpt-4o-mini').trim();
+  const modelCandidates = [preferred, 'gpt-4o-mini', 'gpt-4.1-mini'].filter(Boolean);
+  const uniqueModels = [...new Set(modelCandidates)];
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.4,
-        messages: [
-          {
-            role: 'system',
-            content: 'Tu es Sakan AI. Reponses courtes, utiles, concretes, et orientees logement etudiant au Maroc.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      }),
-      signal: controller.signal,
-    });
+  let lastErr = null;
+  for (const model of uniqueModels) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const apiMsg = data?.error?.message || `OpenAI HTTP ${response.status}`;
-      throw new Error(apiMsg);
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.35,
+          messages: [
+            {
+              role: 'system',
+              content: 'Tu es Sakan AI. Reponses courtes, utiles, concretes, et orientees logement etudiant au Maroc.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const apiMsg = data?.error?.message || `OpenAI HTTP ${response.status}`;
+        throw new Error(apiMsg);
+      }
+
+      const text = String(data?.choices?.[0]?.message?.content || '').trim();
+      if (!text) {
+        throw new Error(`Reponse vide depuis ${model}`);
+      }
+
+      return { text, mode: `openai:${model}` };
+    } catch (err) {
+      lastErr = err;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const text = String(data?.choices?.[0]?.message?.content || '').trim();
-    if (!text) {
-      throw new Error(`Reponse vide depuis ${model}`);
-    }
-
-    return { text, mode: `openai:${model}` };
-  } finally {
-    clearTimeout(timeout);
   }
+
+  throw lastErr || new Error('OpenAI indisponible.');
 };
 
 const generateWithProviders = async (prompt) => {
@@ -258,7 +268,7 @@ router.post('/chat', protect, async (req, res) => {
         avg: Number(requestContext?.priceSummary?.avg) || null,
       },
       listingsSample: Array.isArray(requestContext.listingsSample)
-        ? requestContext.listingsSample.slice(0, 12).map((item) => ({
+        ? requestContext.listingsSample.slice(0, 8).map((item) => ({
             city: item?.city || '',
             budget: Number(item?.budget) || 0,
             ecole: item?.ecole || '',

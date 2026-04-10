@@ -721,7 +721,7 @@ export default function Feed() {
         }
       : { min: null, max: null, avg: null };
 
-    const listingsSample = visiblePool.slice(0, 12).map((a) => ({
+    const listingsSample = visiblePool.slice(0, 8).map((a) => ({
       city: a.city || '',
       budget: Number(a.budget) || 0,
       ecole: a.ecole || '',
@@ -756,7 +756,7 @@ export default function Feed() {
     });
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI_TIMEOUT')), 12000);
+      setTimeout(() => reject(new Error('AI_TIMEOUT')), 20000);
     });
 
     const res = await Promise.race([requestPromise, timeoutPromise]);
