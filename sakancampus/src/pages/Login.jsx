@@ -13,6 +13,8 @@ export default function Login() {
   const [showPwd, setShowPwd] = useState(false);
   const [resetPwd, setResetPwd] = useState('');
   const [resetToken, setResetToken] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetRequested, setResetRequested] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
@@ -50,6 +52,7 @@ export default function Login() {
 
     if (reset) {
       setResetToken(reset);
+      setResetRequested(true);
       setMode('login');
       setInfo('Lien de réinitialisation détecté. Choisis un nouveau mot de passe.');
     }
@@ -107,13 +110,14 @@ export default function Login() {
         : {};
 
       if (!res.ok) {
-        throw new Error(data.message || 'Impossible d\'envoyer le lien de réinitialisation.');
+        throw new Error(data.message || 'Impossible d\'envoyer le code de réinitialisation.');
       }
 
-      setInfo(data.message || 'Lien de réinitialisation envoyé.');
-      if (data.devResetToken) {
-        setResetToken(data.devResetToken);
-        setInfo('Mode dev: token reçu. Tu peux réinitialiser directement ci-dessous.');
+      setResetRequested(true);
+      setInfo(data.message || 'Code de réinitialisation envoyé.');
+      if (data.devResetCode) {
+        setResetCode(String(data.devResetCode));
+        setInfo(`Mode dev: code de réinitialisation = ${data.devResetCode}`);
       }
     } catch (err) {
       setError(err.message || 'Erreur lors de la demande de réinitialisation.');
@@ -125,16 +129,29 @@ export default function Login() {
     setInfo('');
     try {
       if (!resetToken) {
-        throw new Error('Token de réinitialisation manquant.');
+        if (!email.trim()) {
+          throw new Error('Saisis ton email.');
+        }
+        if (resetCode.trim().length !== 6) {
+          throw new Error('Entre le code à 6 chiffres.');
+        }
       }
       if (resetPwd.length < 6) {
         throw new Error('Le nouveau mot de passe doit contenir au moins 6 caractères.');
       }
 
+      const payload = resetToken
+        ? { token: resetToken, newPassword: resetPwd }
+        : {
+            email: email.trim().toLowerCase(),
+            code: resetCode.trim(),
+            newPassword: resetPwd,
+          };
+
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: resetToken, newPassword: resetPwd }),
+        body: JSON.stringify(payload),
       });
 
       const contentType = res.headers.get('content-type') || '';
@@ -148,6 +165,8 @@ export default function Login() {
 
       setResetPwd('');
       setResetToken('');
+      setResetCode('');
+      setResetRequested(false);
       setInfo('Mot de passe réinitialisé. Tu peux te connecter maintenant.');
       navigate('/login', { replace: true });
     } catch (err) {
@@ -722,8 +741,21 @@ export default function Login() {
                 </div>
               )}
 
-              {resetToken && (
+              {(resetToken || resetRequested) && (
                 <div style={{ background:'#fff7ed', border:'1px solid #fdba74', borderRadius:'10px', padding:'10px', display:'grid', gap:'8px' }}>
+                  {!resetToken && (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      className="sc-placeholder"
+                      placeholder="Code de réinitialisation (6 chiffres)"
+                      value={resetCode}
+                      onChange={e => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      style={{ ...inputStyle('resetCode'), letterSpacing:'3px', textAlign:'center', fontWeight:'800' }}
+                    />
+                  )}
                   <input
                     type="password"
                     className="sc-placeholder"

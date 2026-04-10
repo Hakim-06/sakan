@@ -11,6 +11,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const EMAIL_CODE_TTL_MS = 10 * 60 * 1000;
 const EMAIL_CODE_RESEND_COOLDOWN_MS = 60 * 1000;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const RESET_CODE_TTL_MS = 10 * 60 * 1000;
 
 const generateEmailOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const hashOtp = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
@@ -38,6 +39,30 @@ const buildVerifyEmailHtml = (name, code) => `
       <tr>
         <td style="padding:12px 22px 18px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;">
           SakanCampus - Plateforme de colocation etudiante
+        </td>
+      </tr>
+    </table>
+  </div>
+`;
+
+const buildResetPasswordHtml = (name, code) => `
+  <div style="margin:0;padding:24px 0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
+      <tr>
+        <td style="padding:20px 22px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;">
+          <div style="font-size:20px;font-weight:800;letter-spacing:0.2px;">SakanCampus</div>
+          <div style="margin-top:4px;font-size:12px;opacity:0.92;">Réinitialisation mot de passe</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:22px;">
+          <p style="margin:0 0 10px;font-size:15px;line-height:1.6;">Bonjour ${name || ''},</p>
+          <p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:#334155;">Utilise ce code pour réinitialiser ton mot de passe.</p>
+          <div style="margin:0 0 14px;padding:14px 12px;border:1px dashed #93c5fd;border-radius:10px;background:#eff6ff;text-align:center;">
+            <div style="font-size:28px;line-height:1;font-weight:900;letter-spacing:6px;color:#1d4ed8;">${code}</div>
+          </div>
+          <p style="margin:0 0 10px;font-size:13px;color:#475569;">Ce code expire dans <strong>10 minutes</strong>.</p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Si ce n'est pas toi, ignore cet email.</p>
         </td>
       </tr>
     </table>
@@ -90,8 +115,15 @@ const resendVerificationRules = [
   body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
 ];
 const resetPasswordRules = [
-  body('token').notEmpty().withMessage('Token requis'),
   body('newPassword').isLength({ min: 6 }).withMessage('Mot de passe: minimum 6 caractères'),
+  body().custom((value) => {
+    const hasToken = Boolean(value?.token);
+    const hasCodeFlow = Boolean(value?.email && value?.code);
+    if (!hasToken && !hasCodeFlow) {
+      throw new Error('Token ou email+code requis');
+    }
+    return true;
+  }),
 ];
 
 // ══════════════════════════════════════════════════════
@@ -396,27 +428,19 @@ router.post('/forgot-password', forgotPasswordRules, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Cet email n\'existe pas.' });
     }
 
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const resetCode = generateEmailOtpCode();
+    const tokenHash = hashOtp(resetCode);
+    const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MS);
 
     user.passwordResetToken = tokenHash;
     user.passwordResetTokenExpires = expiresAt;
     await user.save({ validateBeforeSave: false });
 
-    const frontendUrl = buildFrontendUrl(req);
-    const resetUrl = `${frontendUrl}/login?resetToken=${rawToken}`;
-
     const mailResult = await sendEmail({
       to: email,
-      subject: 'Réinitialisation du mot de passe - SakanCampus',
-      text: `Réinitialise ton mot de passe via ce lien: ${resetUrl}`,
-      html: `
-        <p>Bonjour,</p>
-        <p>Pour réinitialiser ton mot de passe, clique sur ce lien:</p>
-        <p><a href="${resetUrl}">${resetUrl}</a></p>
-        <p>Ce lien expire dans 15 minutes.</p>
-      `,
+      subject: 'Code de réinitialisation - SakanCampus',
+      text: `Ton code de réinitialisation SakanCampus: ${resetCode} (expire dans 10 minutes).`,
+      html: buildResetPasswordHtml(user.name, resetCode),
     });
 
     if (!mailResult.sent && process.env.NODE_ENV === 'production') {
@@ -425,13 +449,13 @@ router.post('/forgot-password', forgotPasswordRules, async (req, res) => {
 
     const response = {
       success: true,
-      message: 'Un lien de réinitialisation a été envoyé à ton email.',
+      message: 'Un code de réinitialisation a été envoyé à ton email.',
       expiresAt,
     };
 
     if (!mailResult.sent && process.env.NODE_ENV !== 'production') {
-      response.devResetToken = rawToken;
-      response.message = 'SMTP non configuré. Utilise le token de dev pour réinitialiser.';
+      response.devResetCode = resetCode;
+      response.message = 'SMTP non configuré. Utilise le code de dev pour réinitialiser.';
     }
 
     return res.json(response);
@@ -451,16 +475,25 @@ router.post('/reset-password', resetPasswordRules, async (req, res) => {
   }
 
   try {
-    const { token, newPassword } = req.body;
-    const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
+    const { token, email, code, newPassword } = req.body;
+    const tokenHash = token ? hashOtp(token) : null;
+    const codeHash = code ? hashOtp(code) : null;
 
-    const user = await User.findOne({
-      passwordResetToken: tokenHash,
+    const query = {
       passwordResetTokenExpires: { $gt: new Date() },
-    }).select('+password +passwordResetToken +passwordResetTokenExpires');
+    };
+
+    if (tokenHash) {
+      query.passwordResetToken = tokenHash;
+    } else {
+      query.passwordResetToken = codeHash;
+      query.email = String(email || '').trim().toLowerCase();
+    }
+
+    const user = await User.findOne(query).select('+password +passwordResetToken +passwordResetTokenExpires');
 
     if (!user) {
-      return res.status(400).json({ success: false, message: 'Lien de réinitialisation invalide ou expiré.' });
+      return res.status(400).json({ success: false, message: 'Code/lien de réinitialisation invalide ou expiré.' });
     }
 
     user.password = newPassword;
