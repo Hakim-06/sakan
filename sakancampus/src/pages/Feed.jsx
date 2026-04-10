@@ -621,6 +621,7 @@ export default function Feed() {
   const buildAiReply = (questionRaw) => {
     const q = (questionRaw || '').toLowerCase();
     const isDarijaStyle = /[\u0600-\u06FF]/.test(questionRaw || '') || /(chno|bghit|kifach|wach|mzyan|fin|3la|bzaf|safi|kayn)/.test(q);
+    const isGreetingOnly = /^(salam|salut|bonjour|bonsoir|hello|hi|slm|salam aleykoum|salam 3likom)\b[!\.\s]*$/.test(q.trim());
     const pool = filteredToutes.length > 0 ? filteredToutes : annonces;
     const budgets = pool.map(a => Number(a.budget) || 0).filter(Boolean);
     const cityCounts = {};
@@ -633,6 +634,12 @@ export default function Feed() {
       .slice(0, 3)
       .map(([city, count]) => `${city} (${count})`)
       .join(', ');
+
+    if (isGreetingOnly) {
+      return isDarijaStyle
+        ? 'Salam! Ana hna باش n3awnk f logement, prix, villes w matching.'
+        : 'Salut ! Je suis là pour t’aider sur les logements, les prix, les villes et le matching.';
+    }
 
     if (q.includes('prix') || q.includes('budget')) {
       if (!budgets.length) {

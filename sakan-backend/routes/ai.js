@@ -48,11 +48,18 @@ const buildRecommendations = (safeContext) => {
 const buildLocalChatFallback = (message, safeContext) => {
   const style = detectResponseStyle(message);
   const q = String(message || '').toLowerCase();
+  const isGreetingOnly = /^(salam|salut|bonjour|bonsoir|hello|hi|slm|salam aleykoum|salam 3likom)\b[!\.\s]*$/.test(q.trim());
   const topCities = safeContext.topCities?.length ? safeContext.topCities.join(', ') : 'non disponible';
   const min = safeContext.priceSummary?.min || 'n/a';
   const avg = safeContext.priceSummary?.avg || 'n/a';
   const max = safeContext.priceSummary?.max || 'n/a';
   const budget = safeContext.userProfile?.budget || 'n/a';
+
+  if (isGreetingOnly) {
+    return style.includes('Darija')
+      ? 'Salam! Ana hna باش n3awnk f logement, prix, villes w matching.'
+      : 'Salut ! Je suis là pour t’aider sur les logements, les prix, les villes et le matching.';
+  }
 
   if (style.includes('Darija')) {
     if (q.includes('prix') || q.includes('budget')) {
@@ -223,8 +230,19 @@ router.post('/chat', protect, async (req, res) => {
     message = String(req.body?.message || '');
     requestContext = req.body?.context || {};
 
+    const trimmedMessage = message.trim();
+    const isGreetingOnly = /^(salam|salut|bonjour|bonsoir|hello|hi|slm|salam aleykoum|salam 3likom)\b[!\.\s]*$/i.test(trimmedMessage);
+
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message requis.' });
+    }
+
+    if (isGreetingOnly) {
+      const greeting = detectResponseStyle(trimmedMessage).includes('Darija')
+        ? 'Salam! Ana hna باش n3awnk f logement, prix, villes w matching.'
+        : 'Salut ! Je suis là pour t’aider sur les logements, les prix, les villes et le matching.';
+
+      return res.json({ success: true, answer: greeting, mode: 'direct-greeting' });
     }
 
     const safeContext = {
@@ -265,8 +283,9 @@ Langue de reponse: ${responseStyle}.
 Regles:
 - Commence par detecter la langue/ton du message utilisateur et reponds dans le meme style (mirroring).
 - Si l\'utilisateur parle en darija (latin), reponds en darija (latin), pas en francais soutenu.
-- Reponds en format clair: 1) Analyse rapide 2) Meilleures options 3) Action conseillee.
-- Sois pratique (prix, ville, matching, filtres) et base-toi sur les donnees ci-dessous.
+  - Si le message est juste un salut ou un mot court comme "salam", reponds en 1 ligne courte, sans analyse ni liste.
+  - Sinon, reste concis: maximum 4 lignes, et n'utilise un format detaille que si l'utilisateur demande une analyse.
+  - Sois pratique (prix, ville, matching, filtres) et base-toi sur les donnees ci-dessous.
 - Ne donne pas de contenu dangereux.
 - Si possible, cite 2-3 options concretes basees sur les annonces visibles.
 - Evite les generalites. Si info manquante, dis-le clairement en une phrase.
