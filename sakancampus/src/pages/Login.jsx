@@ -437,7 +437,7 @@ export default function Login() {
           body,html{overflow:auto;background:#f8fafc}
           .sc-login-root{height:auto!important;min-height:100vh!important;overflow:visible!important}
           .sc-left-panel{display:none!important}
-          .sc-right-panel{width:100%!important;min-height:100vh!important;padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px))!important;align-items:flex-start!important;background:linear-gradient(180deg,#f8fafc,#eef2f7)!important}
+          .sc-right-panel{width:100%!important;min-height:100vh!important;padding:14px 14px calc(18px + env(safe-area-inset-bottom, 0px))!important;align-items:center!important;background:linear-gradient(180deg,#f8fafc,#eef2f7)!important}
           .sc-login-shell{max-width:560px!important;margin:18px auto 26px!important}
           .sc-tab-switch{margin-bottom:18px!important}
           .sc-login-card{padding:22px 16px!important;border-radius:18px!important;box-shadow:0 10px 30px rgba(15,23,42,0.08)!important}
@@ -572,11 +572,11 @@ export default function Login() {
           <div className="sc-login-card" style={{ background:'white', borderRadius:'24px', padding:'36px 32px', border:'1px solid #e8edf3', boxShadow:'0 4px 24px rgba(15,23,42,0.07)' }}>
 
             {/* Title */}
-            <div style={{ marginBottom:'24px' }}>
-              <h2 style={{ fontFamily:"'Playfair Display', Georgia, serif", fontSize:'1.9rem', fontWeight:'800', color:'#0f172a', margin:'0 0 6px', letterSpacing:'-0.5px' }}>
+            <div style={{ marginBottom:'24px', textAlign:'center' }}>
+              <h2 style={{ fontFamily:"'Playfair Display', Georgia, serif", fontSize:'1.9rem', fontWeight:'800', color:'#0f172a', margin:'0 0 6px', letterSpacing:'-0.5px', textAlign:'center' }}>
                 {isVerificationStep ? 'Vérifie ton email' : (mode === 'login' ? 'Bon retour 👋' : 'Créer un compte')}
               </h2>
-              <p style={{ color:'#64748b', fontSize:'0.88rem', margin:0 }}>
+              <p style={{ color:'#64748b', fontSize:'0.88rem', margin:0, textAlign:'center', lineHeight:'1.5' }}>
                 {isVerificationStep ? 'Entre le code à 6 chiffres reçu par email' : (mode === 'login' ? 'Connecte-toi à ton espace SakanCampus' : "Rejoins la communauté — c'est gratuit")}
               </p>
             </div>
