@@ -370,7 +370,7 @@ const Overlay = ({ children, onClose, zIndex=9998 }) => {
 // ═══════════════════════════════════════════════════════════════
 export default function Feed() {
   const navigate = useNavigate();
-  const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=SC&background=ea580c&color=fff&size=256';
+  const defaultAvatarFromName = (displayName = 'SC') => `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=ea580c&color=fff&size=256`;
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('toutes');
@@ -417,16 +417,16 @@ export default function Feed() {
     }
 
     return {
-      name: cachedUser.name || '',
+      name: cachedUser.name || 'Nouveau compte',
       age: cachedUser.age || '',
-      ecole: cachedUser.ecole || '',
+      ecole: cachedUser.ecole || 'Profil non complete',
       city: cachedUser.city || '',
       budget: cachedUser.budget || '',
       gender: cachedUser.gender || '',
       traits: Array.isArray(cachedUser.traits) ? cachedUser.traits : [],
       bio: cachedUser.bio || '',
       phone: cachedUser.phone || '',
-      image: cachedUser.photo?.url || cachedUser.photo || DEFAULT_AVATAR,
+      image: cachedUser.photo?.url || cachedUser.photo || defaultAvatarFromName(cachedUser.name || 'SC'),
     };
   });
   const [editProfile, setEditProfile] = useState(null);
@@ -2184,16 +2184,16 @@ export default function Feed() {
           {/* PROFILE */}
           <div ref={profileMenuRef} style={{ position:'relative' }}>
             <div onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)} style={{ width:'38px', height:'38px', borderRadius:'50%', border:`2.5px solid ${isProfileMenuOpen?'#ea580c':borderStrong}`, cursor:'pointer', overflow:'hidden', transition:'border-color 0.2s,transform 0.2s', transform: isProfileMenuOpen?'scale(1.08)':'scale(1)' }}>
-              <img src={myProfile.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              <img src={myProfile.image || defaultAvatarFromName(myProfile.name || 'SC')} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
             </div>
             {isProfileMenuOpen && (
               <div style={{ position:'absolute', top:'48px', right:'0', width:'215px', background:surface, borderRadius:'18px', boxShadow:`0 20px 50px rgba(0,0,0,${darkMode?'0.5':'0.15'})`, border:`1px solid ${borderStrong}`, zIndex:1010, animation:'dropIn 0.2s cubic-bezier(0.16,1,0.3,1)', overflow:'hidden' }}>
                 <div style={{ padding:'14px 16px', background: darkMode?'rgba(255,255,255,0.03)':'#f8fafc', borderBottom:`1px solid ${border}` }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                    <img src={myProfile.image} style={{ width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid #ea580c' }} alt="" />
+                    <img src={myProfile.image || defaultAvatarFromName(myProfile.name || 'SC')} style={{ width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', border:'2px solid #ea580c' }} alt="" />
                     <div>
-                      <p style={{ margin:0, fontWeight:'800', color:text, fontSize:'0.86rem' }}>{myProfile.name}</p>
-                      <p style={{ margin:0, fontSize:'0.72rem', color:textMuted }}>{myProfile.ecole}</p>
+                      <p style={{ margin:0, fontWeight:'800', color:text, fontSize:'0.86rem' }}>{myProfile.name || 'Nouveau compte'}</p>
+                      <p style={{ margin:0, fontSize:'0.72rem', color:textMuted }}>{myProfile.ecole || 'Profil non complete'}</p>
                     </div>
                   </div>
                 </div>
