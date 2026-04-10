@@ -87,7 +87,7 @@ const getGeminiClient = () => {
   return new GoogleGenerativeAI(key);
 };
 
-const generateWithFallbackModels = async (prompt) => {
+const generateWithGeminiModels = async (prompt) => {
   const genAI = getGeminiClient();
   const preferredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   const candidates = [
@@ -105,8 +105,77 @@ const generateWithFallbackModels = async (prompt) => {
       const model = genAI.getGenerativeModel({ model: modelName });
       const result = await model.generateContent(prompt);
       const text = result.response.text().trim();
-      if (text) return text;
+      if (text) return { text, mode: `gemini:${modelName}` };
       throw new Error(`Reponse vide depuis ${modelName}`);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  throw lastErr || new Error('Generation IA impossible.');
+};
+
+const generateWithOpenAI = async (prompt) => {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) {
+    throw new Error('OPENAI_API_KEY manqosa.');
+  }
+
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.4,
+        messages: [
+          {
+            role: 'system',
+            content: 'Tu es Sakan AI. Reponses courtes, utiles, concretes, et orientees logement etudiant au Maroc.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      }),
+      signal: controller.signal,
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const apiMsg = data?.error?.message || `OpenAI HTTP ${response.status}`;
+      throw new Error(apiMsg);
+    }
+
+    const text = String(data?.choices?.[0]?.message?.content || '').trim();
+    if (!text) {
+      throw new Error(`Reponse vide depuis ${model}`);
+    }
+
+    return { text, mode: `openai:${model}` };
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const generateWithProviders = async (prompt) => {
+  const provider = String(process.env.AI_PROVIDER || 'auto').toLowerCase();
+  const pipelines =
+    provider === 'openai'
+      ? [generateWithOpenAI, generateWithGeminiModels]
+      : provider === 'gemini'
+        ? [generateWithGeminiModels, generateWithOpenAI]
+        : [generateWithOpenAI, generateWithGeminiModels];
+
+  let lastErr = null;
+  for (const run of pipelines) {
+    try {
+      return await run(prompt);
     } catch (err) {
       lastErr = err;
     }
@@ -132,7 +201,7 @@ Traits de caractère: ${traits.join(', ')}.
 Ton: sympa, naturel, moderne, donne envie de vivre avec cette personne.
 Réponds UNIQUEMENT avec le texte de la bio, sans guillemets, sans introduction.`;
 
-    const bio = await generateWithFallbackModels(prompt);
+    const { text: bio } = await generateWithProviders(prompt);
 
     if (!bio) throw new Error('Réponse Gemini vide');
 
@@ -148,27 +217,30 @@ Réponds UNIQUEMENT avec le texte de la bio, sans guillemets, sans introduction.
 // POST /api/ai/chat  — assistant chat général (Gemini)
 // ══════════════════════════════════════════════════════
 router.post('/chat', protect, async (req, res) => {
+  let message = '';
+  let requestContext = {};
   try {
-    const { message, context = {} } = req.body;
+    message = String(req.body?.message || '');
+    requestContext = req.body?.context || {};
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ success: false, message: 'Message requis.' });
     }
 
     const safeContext = {
-      city: context.city || 'non precise',
-      priceMin: context.priceMin || '',
-      priceMax: context.priceMax || '',
-      matchingThreshold: Number(context.matchingThreshold) || 70,
-      visibleCount: Number(context.visibleCount) || 0,
-      topCities: Array.isArray(context.topCities) ? context.topCities.slice(0, 6) : [],
+      city: requestContext.city || 'non precise',
+      priceMin: requestContext.priceMin || '',
+      priceMax: requestContext.priceMax || '',
+      matchingThreshold: Number(requestContext.matchingThreshold) || 70,
+      visibleCount: Number(requestContext.visibleCount) || 0,
+      topCities: Array.isArray(requestContext.topCities) ? requestContext.topCities.slice(0, 6) : [],
       priceSummary: {
-        min: Number(context?.priceSummary?.min) || null,
-        max: Number(context?.priceSummary?.max) || null,
-        avg: Number(context?.priceSummary?.avg) || null,
+        min: Number(requestContext?.priceSummary?.min) || null,
+        max: Number(requestContext?.priceSummary?.max) || null,
+        avg: Number(requestContext?.priceSummary?.avg) || null,
       },
-      listingsSample: Array.isArray(context.listingsSample)
-        ? context.listingsSample.slice(0, 12).map((item) => ({
+      listingsSample: Array.isArray(requestContext.listingsSample)
+        ? requestContext.listingsSample.slice(0, 12).map((item) => ({
             city: item?.city || '',
             budget: Number(item?.budget) || 0,
             ecole: item?.ecole || '',
@@ -177,9 +249,9 @@ router.post('/chat', protect, async (req, res) => {
           }))
         : [],
       userProfile: {
-        city: context?.userProfile?.city || '',
-        budget: Number(context?.userProfile?.budget) || 0,
-        traits: Array.isArray(context?.userProfile?.traits) ? context.userProfile.traits.slice(0, 8) : [],
+        city: requestContext?.userProfile?.city || '',
+        budget: Number(requestContext?.userProfile?.budget) || 0,
+        traits: Array.isArray(requestContext?.userProfile?.traits) ? requestContext.userProfile.traits.slice(0, 8) : [],
       },
     };
 
@@ -215,32 +287,31 @@ Question utilisateur:
 ${message.trim()}
 `.trim();
 
-    const answer = await generateWithFallbackModels(prompt);
+    const { text: answer, mode } = await generateWithProviders(prompt);
 
     if (!answer) {
       throw new Error('Reponse IA vide');
     }
 
-    res.json({ success: true, answer });
+    res.json({ success: true, answer, mode });
   } catch (err) {
     const msg = String(err?.message || 'Erreur IA inconnue');
     console.error('AI CHAT ERROR:', msg);
 
-    const lowerMsg = msg.toLowerCase();
     const fallbackContext = {
-      city: context?.city || 'non precise',
-      priceMin: context?.priceMin || '',
-      priceMax: context?.priceMax || '',
-      matchingThreshold: Number(context?.matchingThreshold) || 70,
-      visibleCount: Number(context?.visibleCount) || 0,
-      topCities: Array.isArray(context?.topCities) ? context.topCities.slice(0, 6) : [],
+      city: requestContext?.city || 'non precise',
+      priceMin: requestContext?.priceMin || '',
+      priceMax: requestContext?.priceMax || '',
+      matchingThreshold: Number(requestContext?.matchingThreshold) || 70,
+      visibleCount: Number(requestContext?.visibleCount) || 0,
+      topCities: Array.isArray(requestContext?.topCities) ? requestContext.topCities.slice(0, 6) : [],
       priceSummary: {
-        min: Number(context?.priceSummary?.min) || null,
-        max: Number(context?.priceSummary?.max) || null,
-        avg: Number(context?.priceSummary?.avg) || null,
+        min: Number(requestContext?.priceSummary?.min) || null,
+        max: Number(requestContext?.priceSummary?.max) || null,
+        avg: Number(requestContext?.priceSummary?.avg) || null,
       },
       userProfile: {
-        budget: Number(context?.userProfile?.budget) || 0,
+        budget: Number(requestContext?.userProfile?.budget) || 0,
       },
     };
 

@@ -748,7 +748,7 @@ export default function Feed() {
     });
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI_TIMEOUT')), 7000);
+      setTimeout(() => reject(new Error('AI_TIMEOUT')), 12000);
     });
 
     const res = await Promise.race([requestPromise, timeoutPromise]);
@@ -772,7 +772,10 @@ export default function Feed() {
       throw new Error(data?.message || 'Reponse IA invalide');
     }
 
-    return data.answer;
+    return {
+      answer: data.answer,
+      mode: String(data.mode || 'backend'),
+    };
   };
 
   const handleAiSend = async (forcedText) => {
@@ -791,12 +794,12 @@ export default function Feed() {
     setAiIsTyping(true);
 
     try {
-      const answer = await askAiBackend(textToSend);
-      setAiRuntimeMode('backend');
+      const backendData = await askAiBackend(textToSend);
+      setAiRuntimeMode(backendData.mode === 'fallback-local' ? 'local' : 'backend');
       const assistantMsg = {
         id: Date.now() + Math.random(),
         role: 'assistant',
-        text: answer,
+        text: backendData.answer,
         at: Date.now(),
       };
       setAiMessages(prev => [...prev, assistantMsg]);
