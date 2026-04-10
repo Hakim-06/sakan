@@ -3140,9 +3140,6 @@ export default function Feed() {
                 {editProfile.traits?.length>=4 && <p style={{ margin:'8px 0 0', fontSize:'0.72rem', color:textMuted, display:'flex', alignItems:'center', gap:'5px' }}><I.info width="11" height="11"/> Maximum 4 traits atteint</p>}
               </div>
 
-              <button className="save-btn" onClick={saveProfile}>
-                <I.check width="16" height="16"/> Enregistrer le profil
-              </button>
             </div>
           </div>
         </Overlay>
