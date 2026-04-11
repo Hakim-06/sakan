@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-export default function LoginScreen({ onSubmit, loading, error }) {
+export default function LoginScreen({ onSubmit, loading, error, onGoRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -61,6 +61,10 @@ export default function LoginScreen({ onSubmit, loading, error }) {
             {loading
               ? <ActivityIndicator color="#fff" />
               : <Text style={styles.btnText}>Se connecter</Text>}
+          </Pressable>
+
+          <Pressable style={styles.linkBtn} onPress={onGoRegister}>
+            <Text style={styles.link}>Creer un compte</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -124,5 +128,13 @@ const styles = StyleSheet.create({
     color: '#fda4af',
     marginBottom: 6,
     fontSize: 13,
+  },
+  linkBtn: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  link: {
+    color: '#fdba74',
+    fontWeight: '700',
   },
 });
