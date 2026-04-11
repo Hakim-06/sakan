@@ -3413,6 +3413,16 @@ export default function Feed() {
                     <span style={{ fontSize:'0.8rem', color:textMuted }}>Image prête à envoyer</span>
                   </div>
                 )}
+                {!!newMessage.trim() && !isSendingMessage && (
+                  <div style={{ padding:'8px 14px 0', color:textMuted, fontSize:'0.74rem', fontWeight:'700', display:'flex', alignItems:'center', gap:'6px' }}>
+                    <span>Vous écrivez...</span>
+                    <span style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                      {[0,1,2].map(i => (
+                        <span key={i} style={{ width:'4px', height:'4px', borderRadius:'50%', background:'#94a3b8', animation:`typingDot 1.1s ${i * 0.18}s infinite` }} />
+                      ))}
+                    </span>
+                  </div>
+                )}
                 <div style={{ padding:`11px calc(13px + env(safe-area-inset-right, 0px)) calc(11px + env(safe-area-inset-bottom, 0px)) calc(13px + env(safe-area-inset-left, 0px))`, borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center', background:surface, overflowX:'hidden' }}>
                   <input type="text" placeholder={`Message à ${activeChat.name}...`} value={newMessage}
                     onChange={e=>setNewMessage(e.target.value)}
