@@ -1792,7 +1792,7 @@ export default function Feed() {
     setActiveConvId(targetId);
     setIsMessagesOpen(true);
     setMessageListFilter('all');
-    setNewMessage(`Wach had dar disponible? Nqas liya f ${profile.city || 'had l-had 3lah'}...`);
+    setNewMessage(`Bonjour ${profile.name || ''},\n\nVotre annonce pour le logement a ${profile.city || 'cette ville'} m'interesse beaucoup. Est-ce qu'il est toujours disponible ?\n\nJ'ai un budget autour de ${Number(profile.budget) ? `${new Intl.NumberFormat('fr-MA').format(Number(profile.budget))} DH/mois` : 'mon budget mensuel'} et je peux me deplacer rapidement pour une visite.\n\nMerci d'avance pour votre retour.`);
     loadMessagesWithUser(targetId, false);
   };
   const openProfileEdit = async () => {
