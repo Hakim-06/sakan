@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { updateProfile } from '../api/users';
 
 export default function ProfileScreen({ token, user, onUserUpdated, onLogout }) {
@@ -8,10 +8,13 @@ export default function ProfileScreen({ token, user, onUserUpdated, onLogout }) 
   const [city, setCity] = useState(user?.city || '');
   const [budget, setBudget] = useState(String(user?.budget || '1500'));
   const [bio, setBio] = useState(user?.bio || '');
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    setFeedback('');
+    if (saving) return;
+    setSaving(true);
+    setFeedback({ type: '', text: '' });
     try {
       const payload = {
         name: name.trim(),
@@ -22,9 +25,14 @@ export default function ProfileScreen({ token, user, onUserUpdated, onLogout }) 
       };
       const data = await updateProfile(token, payload);
       if (data?.user) onUserUpdated(data.user);
-      setFeedback('Profil mis a jour.');
+      setFeedback({ type: 'success', text: 'Profil mis a jour.' });
+      Alert.alert('Succes', 'Profil mis a jour.');
     } catch (err) {
-      setFeedback(err.message || 'Erreur mise a jour profil.');
+      const msg = err.message || 'Erreur mise a jour profil.';
+      setFeedback({ type: 'error', text: msg });
+      Alert.alert('Erreur', msg);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -46,10 +54,10 @@ export default function ProfileScreen({ token, user, onUserUpdated, onLogout }) 
           onChangeText={setBio}
         />
 
-        {!!feedback && <Text style={styles.feedback}>{feedback}</Text>}
+        {!!feedback.text && <Text style={[styles.feedback, feedback.type === 'error' && styles.feedbackError]}>{feedback.text}</Text>}
 
-        <Pressable style={styles.btn} onPress={handleSave}>
-          <Text style={styles.btnText}>Sauvegarder</Text>
+        <Pressable style={[styles.btn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sauvegarder</Text>}
         </Pressable>
 
         <Pressable style={styles.logoutBtn} onPress={onLogout}>
@@ -76,6 +84,7 @@ const styles = StyleSheet.create({
   },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   feedback: { color: '#86efac', marginBottom: 10 },
+  feedbackError: { color: '#fda4af' },
   btn: {
     backgroundColor: '#ea580c',
     borderRadius: 12,
@@ -84,6 +93,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   btnText: { color: '#fff', fontWeight: '700' },
+  btnDisabled: { opacity: 0.6 },
   logoutBtn: {
     backgroundColor: '#1f2937',
     borderWidth: 1,

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   FlatList,
   Pressable,
@@ -20,6 +22,9 @@ function toTime(input) {
 }
 
 export default function MessagesScreen({ token }) {
+  const [loadingConversations, setLoadingConversations] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const [conversations, setConversations] = useState([]);
   const [activeUserId, setActiveUserId] = useState('');
   const [messages, setMessages] = useState([]);
@@ -35,11 +40,15 @@ export default function MessagesScreen({ token }) {
   );
 
   const loadConversations = useCallback(async () => {
+    setLoadingConversations(true);
     try {
       const data = await getConversations(token);
       setConversations(Array.isArray(data?.conversations) ? data.conversations : []);
-    } catch {
-      // Keep UI stable on transient failure.
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Erreur chargement conversations.');
+    } finally {
+      setLoadingConversations(false);
     }
   }, [token]);
 
@@ -100,8 +109,9 @@ export default function MessagesScreen({ token }) {
 
   const handleSend = async () => {
     const text = draft.trim();
-    if ((!text && !pickedImage) || !activeUserId) return;
+    if ((!text && !pickedImage) || !activeUserId || sending) return;
 
+    setSending(true);
     setDraft('');
     if (typingRef.current) {
       typingRef.current = false;
@@ -115,10 +125,15 @@ export default function MessagesScreen({ token }) {
       }
       await sendMessage(token, activeUserId, text, uploaded);
       setPickedImage(null);
+      setError('');
       await loadMessages(activeUserId);
       await loadConversations();
-    } catch {
-      // Keep silent for now.
+    } catch (err) {
+      const msg = err.message || 'Erreur envoi message.';
+      setError(msg);
+      Alert.alert('Erreur', msg);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -138,11 +153,15 @@ export default function MessagesScreen({ token }) {
   return (
     <SafeAreaView style={styles.safe}>
       {!activeUserId ? (
+        loadingConversations ? (
+          <View style={styles.center}><ActivityIndicator color="#ea580c" /></View>
+        ) : (
         <FlatList
           data={conversations}
           keyExtractor={(item, idx) => String(item?.user?._id || idx)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={styles.empty}>Pas de conversations.</Text>}
+          ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : null}
           renderItem={({ item }) => (
             <Pressable
               style={styles.convCard}
@@ -153,6 +172,7 @@ export default function MessagesScreen({ token }) {
             </Pressable>
           )}
         />
+        )
       ) : (
         <View style={styles.chatWrap}>
           <View style={styles.chatHeader}>
@@ -192,9 +212,10 @@ export default function MessagesScreen({ token }) {
               onChangeText={setDraft}
             />
             <Pressable style={styles.sendBtn} onPress={handleSend}>
-              <Text style={styles.sendText}>Send</Text>
+              {sending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.sendText}>Send</Text>}
             </Pressable>
           </View>
+          {!!error ? <Text style={styles.errorInline}>{error}</Text> : null}
           {pickedImage?.uri ? (
             <View style={styles.previewRow}>
               <Image source={{ uri: pickedImage.uri }} style={styles.previewImage} />
@@ -211,8 +232,10 @@ export default function MessagesScreen({ token }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#0f172a' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 14, gap: 10 },
   empty: { color: '#94a3b8', textAlign: 'center', marginTop: 24 },
+  error: { color: '#fda4af', marginBottom: 10 },
   convCard: {
     backgroundColor: '#111827',
     borderWidth: 1,
@@ -286,4 +309,5 @@ const styles = StyleSheet.create({
   },
   previewImage: { width: 56, height: 56, borderRadius: 8 },
   removePreview: { color: '#fdba74', fontWeight: '700' },
+  errorInline: { color: '#fda4af', paddingHorizontal: 12, paddingBottom: 8, fontSize: 12 },
 });

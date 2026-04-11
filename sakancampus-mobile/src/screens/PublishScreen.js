@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createAnnonce, deleteAnnonce, getMyAnnonces, updateAnnonce } from '../api/annonces';
 
 export default function PublishScreen({ token, onPublished }) {
@@ -10,15 +10,19 @@ export default function PublishScreen({ token, onPublished }) {
   const [mine, setMine] = useState([]);
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMine, setLoadingMine] = useState(true);
 
   const canSubmit = city.trim().length >= 2 && Number(budget) > 0 && !loading;
 
   const loadMine = async () => {
+    setLoadingMine(true);
     try {
       const data = await getMyAnnonces(token);
       setMine(Array.isArray(data?.annonces) ? data.annonces : []);
-    } catch {
-      // Ignore load failure in UI for now.
+    } catch (err) {
+      setFeedback(err.message || 'Erreur chargement annonces perso.');
+    } finally {
+      setLoadingMine(false);
     }
   };
 
@@ -66,21 +70,32 @@ export default function PublishScreen({ token, onPublished }) {
   };
 
   const handleDelete = async (item) => {
-    const id = String(item?._id || item?.id || '');
-    if (!id) return;
-    try {
-      await deleteAnnonce(token, id);
-      if (editingId === id) {
-        setEditingId('');
-        setCity('');
-        setBudget('');
-        setDescription('');
-      }
-      setFeedback('Annonce supprimee.');
-      await loadMine();
-    } catch (err) {
-      setFeedback(err.message || 'Erreur suppression.');
-    }
+    Alert.alert('Confirmer', 'Supprimer cette annonce ?', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: async () => {
+          const id = String(item?._id || item?.id || '');
+          if (!id) return;
+          try {
+            await deleteAnnonce(token, id);
+            if (editingId === id) {
+              setEditingId('');
+              setCity('');
+              setBudget('');
+              setDescription('');
+            }
+            setFeedback('Annonce supprimee.');
+            await loadMine();
+          } catch (err) {
+            const msg = err.message || 'Erreur suppression.';
+            setFeedback(msg);
+            Alert.alert('Erreur', msg);
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -106,26 +121,30 @@ export default function PublishScreen({ token, onPublished }) {
         </Pressable>
 
         <Text style={styles.sectionTitle}>Mes annonces</Text>
-        <FlatList
-          data={mine}
-          keyExtractor={(item, idx) => String(item?._id || item?.id || idx)}
-          contentContainerStyle={styles.mineList}
-          ListEmptyComponent={<Text style={styles.empty}>Aucune annonce perso.</Text>}
-          renderItem={({ item }) => (
-            <View style={styles.mineCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.mineCity}>{item?.city || 'Ville'}</Text>
-                <Text style={styles.mineMeta}>{Number(item?.budget || 0)} DH/mois</Text>
+        {loadingMine ? (
+          <View style={styles.mineLoading}><ActivityIndicator color="#ea580c" /></View>
+        ) : (
+          <FlatList
+            data={mine}
+            keyExtractor={(item, idx) => String(item?._id || item?.id || idx)}
+            contentContainerStyle={styles.mineList}
+            ListEmptyComponent={<Text style={styles.empty}>Aucune annonce perso.</Text>}
+            renderItem={({ item }) => (
+              <View style={styles.mineCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mineCity}>{item?.city || 'Ville'}</Text>
+                  <Text style={styles.mineMeta}>{Number(item?.budget || 0)} DH/mois</Text>
+                </View>
+                <Pressable style={styles.actionBtn} onPress={() => handleEdit(item)}>
+                  <Text style={styles.actionText}>Edit</Text>
+                </Pressable>
+                <Pressable style={[styles.actionBtn, styles.actionDanger]} onPress={() => handleDelete(item)}>
+                  <Text style={styles.actionText}>Delete</Text>
+                </Pressable>
               </View>
-              <Pressable style={styles.actionBtn} onPress={() => handleEdit(item)}>
-                <Text style={styles.actionText}>Edit</Text>
-              </Pressable>
-              <Pressable style={[styles.actionBtn, styles.actionDanger]} onPress={() => handleDelete(item)}>
-                <Text style={styles.actionText}>Delete</Text>
-              </Pressable>
-            </View>
-          )}
-        />
+            )}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -180,4 +199,5 @@ const styles = StyleSheet.create({
   actionDanger: { backgroundColor: '#7f1d1d', borderColor: '#991b1b' },
   actionText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   empty: { color: '#94a3b8' },
+  mineLoading: { paddingVertical: 18 },
 });
