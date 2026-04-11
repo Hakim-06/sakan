@@ -485,6 +485,8 @@ export default function Feed() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const typingStopTimerRef = useRef(null);
+  const isTypingRef = useRef(false);
   const messagesEndRef = useRef(null);
   const aiPanelRef = useRef(null);
   const aiMessagesEndRef = useRef(null);
@@ -1129,6 +1131,7 @@ export default function Feed() {
       if (!res.ok || !data.success) return;
 
       const mappedMessages = mapMessagesFromApi(data.messages || []);
+      const remoteTyping = !!data.isTyping;
       setConversations(prev => {
         let found = false;
         const updated = prev.map(c => {
@@ -1136,6 +1139,7 @@ export default function Feed() {
             found = true;
             return {
               ...c,
+              isTyping: remoteTyping,
               messages: mappedMessages,
               unread: 0,
               isDraftConversation: mappedMessages.length > 0 ? false : !!c.isDraftConversation,
@@ -1157,6 +1161,7 @@ export default function Feed() {
           isOnline: false,
           lastSeen: null,
           unread: 0,
+          isTyping: remoteTyping,
           isDraftConversation: false,
           lastMessage: mappedMessages[mappedMessages.length - 1]?.text || '',
           time: mappedMessages[mappedMessages.length - 1]?.time || '',
@@ -1675,6 +1680,17 @@ export default function Feed() {
 
     setIsSendingMessage(true);
     setNewMessage('');
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      fetch(`/api/messages/typing/stop/${activeConvId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
 
     try {
       const body = { text: textToSend };
@@ -1764,6 +1780,66 @@ export default function Feed() {
       const noMessages = !Array.isArray(c.messages) || c.messages.length === 0;
       return !(c.isDraftConversation && noLastMessage && noMessages);
     }));
+  }, []);
+
+  const notifyTypingStart = useCallback(async (targetId) => {
+    if (!targetId) return;
+    const token = localStorage.getItem('sc_token');
+    if (!token) return;
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      fetch(`/api/messages/typing/start/${targetId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+    if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current);
+    typingStopTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      fetch(`/api/messages/typing/stop/${targetId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+      typingStopTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  const notifyTypingStop = useCallback(async (targetId) => {
+    if (!targetId) return;
+    const token = localStorage.getItem('sc_token');
+    if (!token) return;
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+    if (!isTypingRef.current) return;
+    isTypingRef.current = false;
+    fetch(`/api/messages/typing/stop/${targetId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isMessagesOpen || !activeConvId) return;
+    if (newMessage.trim()) {
+      notifyTypingStart(activeConvId);
+    } else {
+      notifyTypingStop(activeConvId);
+    }
+  }, [newMessage, isMessagesOpen, activeConvId, notifyTypingStart, notifyTypingStop]);
+
+  useEffect(() => {
+    if (isMessagesOpen) return;
+    if (activeConvId) notifyTypingStop(activeConvId);
+  }, [isMessagesOpen, activeConvId, notifyTypingStop]);
+
+  useEffect(() => {
+    return () => {
+      if (typingStopTimerRef.current) {
+        clearTimeout(typingStopTimerRef.current);
+      }
+    };
   }, []);
 
   const handleContact = (profile) => {

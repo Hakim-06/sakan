@@ -7,6 +7,30 @@ const { uploadMessage, deleteFromCloudinary } = require('../middleware/upload');
 
 const router = express.Router();
 
+const TYPING_TTL_MS = 7000;
+const typingState = new Map();
+
+const typingKey = (senderId, receiverId) => `${String(senderId)}:${String(receiverId)}`;
+
+const setTyping = (senderId, receiverId) => {
+  typingState.set(typingKey(senderId, receiverId), Date.now());
+};
+
+const clearTyping = (senderId, receiverId) => {
+  typingState.delete(typingKey(senderId, receiverId));
+};
+
+const isTypingActive = (senderId, receiverId) => {
+  const key = typingKey(senderId, receiverId);
+  const ts = typingState.get(key);
+  if (!ts) return false;
+  if (Date.now() - ts > TYPING_TTL_MS) {
+    typingState.delete(key);
+    return false;
+  }
+  return true;
+};
+
 // ════════════════════���═══════════════════════════════���═
 // GET /api/messages/unread/count  — total unread count
 // ═════════���═══════════════════════════════���════════════
@@ -69,9 +93,57 @@ router.get('/conversations', protect, async (req, res) => {
       { $sort: { 'lastMessage.createdAt': -1 } },
     ]);
 
-    res.json({ success: true, conversations });
+    const me = String(req.user._id);
+    const withTyping = conversations.map((conv) => ({
+      ...conv,
+      isTyping: isTypingActive(String(conv?.user?._id || ''), me),
+    }));
+
+    res.json({ success: true, conversations: withTyping });
   } catch (err) {
     console.error('CONVERSATIONS ERROR:', err);
+    res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// POST /api/messages/typing/start/:userId  — typing ON
+// ══════════════════════════════════════════════════════
+router.post('/typing/start/:userId', protect, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const myId = String(req.user._id);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Destinataire invalide.' });
+    }
+
+    if (String(userId) === myId) {
+      return res.status(400).json({ success: false, message: 'Operation invalide.' });
+    }
+
+    setTyping(myId, userId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// POST /api/messages/typing/stop/:userId  — typing OFF
+// ══════════════════════════════════════════════════════
+router.post('/typing/stop/:userId', protect, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const myId = String(req.user._id);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Destinataire invalide.' });
+    }
+
+    clearTyping(myId, userId);
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }
 });
@@ -103,7 +175,11 @@ router.get('/:userId', protect, async (req, res) => {
       { isRead: true, readAt: new Date() }
     );
 
-    res.json({ success: true, messages });
+    res.json({
+      success: true,
+      messages,
+      isTyping: isTypingActive(String(userId), String(myId)),
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }
@@ -170,6 +246,8 @@ router.post('/:userId', protect, async (req, res) => {
 
     await message.populate('sender', 'name photo');
     await message.populate('receiver', 'name photo');
+
+    clearTyping(req.user._id, userId);
 
     res.status(201).json({ success: true, message });
   } catch (err) {
