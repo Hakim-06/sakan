@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getMe, login, logout, register, resendVerification, verifyEmailCode } from './src/api/auth';
 import FeedScreen from './src/screens/FeedScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -10,6 +13,9 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import PublishScreen from './src/screens/PublishScreen';
 import { getUnreadCount } from './src/api/messages';
 
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -17,7 +23,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState('');
   const [authScreen, setAuthScreen] = useState('login');
-  const [tab, setTab] = useState('feed');
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -97,7 +102,6 @@ export default function App() {
     setToken('');
     setUser(null);
     setAuthScreen('login');
-    setTab('feed');
     setUnreadCount(0);
   };
 
@@ -128,64 +132,99 @@ export default function App() {
   }
 
   if (!user) {
-    if (authScreen === 'register') {
-      return (
-        <RegisterScreen
-          onRegister={handleRegister}
-          onVerifyCode={handleVerifyCode}
-          onResendCode={handleResendCode}
-          onBackLogin={() => setAuthScreen('login')}
-        />
-      );
-    }
-
     return (
-      <LoginScreen
-        onSubmit={handleLogin}
-        loading={loading}
-        error={error}
-        onGoRegister={() => {
-          setError('');
-          setAuthScreen('register');
-        }}
-      />
+      <NavigationContainer theme={navTheme}>
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          {authScreen !== 'register' ? (
+            <Stack.Screen name="Login">
+              {() => (
+                <LoginScreen
+                  onSubmit={handleLogin}
+                  loading={loading}
+                  error={error}
+                  onGoRegister={() => {
+                    setError('');
+                    setAuthScreen('register');
+                  }}
+                />
+              )}
+            </Stack.Screen>
+          ) : (
+            <Stack.Screen name="Register">
+              {() => (
+                <RegisterScreen
+                  onRegister={handleRegister}
+                  onVerifyCode={handleVerifyCode}
+                  onResendCode={handleResendCode}
+                  onBackLogin={() => setAuthScreen('login')}
+                />
+              )}
+            </Stack.Screen>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
     );
   }
 
   return (
-    <SafeAreaView style={styles.appSafe}>
-      <View style={styles.appBody}>
-        {tab === 'feed' && <FeedScreen token={token} user={user} onUserUpdated={setUser} />}
-        {tab === 'messages' && <MessagesScreen token={token} />}
-        {tab === 'publish' && <PublishScreen token={token} onPublished={() => setTab('feed')} />}
-        {tab === 'profile' && (
-          <ProfileScreen
-            token={token}
-            user={user}
-            onUserUpdated={setUser}
-            onLogout={handleLogout}
-          />
-        )}
-      </View>
+    <NavigationContainer theme={navTheme}>
+      <Tab.Navigator
+        screenOptions={{
+          headerStyle: { backgroundColor: '#111827' },
+          headerTintColor: '#f8fafc',
+          tabBarStyle: { backgroundColor: '#111827', borderTopColor: '#1f2937' },
+          tabBarActiveTintColor: '#fff',
+          tabBarInactiveTintColor: '#cbd5e1',
+          tabBarActiveBackgroundColor: '#ea580c',
+          tabBarLabelStyle: { fontWeight: '700', fontSize: 12 },
+          tabBarItemStyle: { borderRadius: 10, marginHorizontal: 4, marginVertical: 6 },
+          sceneStyle: { backgroundColor: '#0f172a' },
+        }}
+      >
+        <Tab.Screen name="Feed" options={{ title: 'Feed' }}>
+          {() => <FeedScreen token={token} user={user} onUserUpdated={setUser} />}
+        </Tab.Screen>
 
-      <View style={styles.tabBar}>
-        <Pressable style={[styles.tabBtn, tab === 'feed' && styles.tabBtnActive]} onPress={() => setTab('feed')}>
-          <Text style={[styles.tabText, tab === 'feed' && styles.tabTextActive]}>Feed</Text>
-        </Pressable>
-        <Pressable style={[styles.tabBtn, tab === 'messages' && styles.tabBtnActive]} onPress={() => setTab('messages')}>
-          <Text style={[styles.tabText, tab === 'messages' && styles.tabTextActive]}>Messages</Text>
-          {unreadCount > 0 ? <Text style={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</Text> : null}
-        </Pressable>
-        <Pressable style={[styles.tabBtn, tab === 'publish' && styles.tabBtnActive]} onPress={() => setTab('publish')}>
-          <Text style={[styles.tabText, tab === 'publish' && styles.tabTextActive]}>Publier</Text>
-        </Pressable>
-        <Pressable style={[styles.tabBtn, tab === 'profile' && styles.tabBtnActive]} onPress={() => setTab('profile')}>
-          <Text style={[styles.tabText, tab === 'profile' && styles.tabTextActive]}>Profil</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+        <Tab.Screen
+          name="Messages"
+          options={{
+            title: 'Messages',
+            tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+          }}
+        >
+          {() => <MessagesScreen token={token} />}
+        </Tab.Screen>
+
+        <Tab.Screen name="Publier" options={{ title: 'Publier' }}>
+          {() => <PublishScreen token={token} />}
+        </Tab.Screen>
+
+        <Tab.Screen name="Profil" options={{ title: 'Profil' }}>
+          {() => (
+            <ProfileScreen
+              token={token}
+              user={user}
+              onUserUpdated={setUser}
+              onLogout={handleLogout}
+            />
+          )}
+        </Tab.Screen>
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
+
+const navTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: '#0f172a',
+    card: '#111827',
+    border: '#1f2937',
+    text: '#f8fafc',
+    primary: '#ea580c',
+  },
+};
 
 const styles = StyleSheet.create({
   bootWrap: {
@@ -198,54 +237,5 @@ const styles = StyleSheet.create({
   bootText: {
     color: '#cbd5e1',
     fontSize: 14,
-  },
-  appSafe: {
-    flex: 1,
-    backgroundColor: '#0f172a',
-  },
-  appBody: {
-    flex: 1,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#1f2937',
-    backgroundColor: '#111827',
-    paddingBottom: 8,
-    paddingTop: 8,
-    paddingHorizontal: 8,
-    gap: 8,
-  },
-  tabBtn: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  tabBtnActive: {
-    backgroundColor: '#ea580c',
-  },
-  tabText: {
-    color: '#cbd5e1',
-    fontWeight: '700',
-  },
-  tabTextActive: {
-    color: '#fff',
-  },
-  badge: {
-    position: 'absolute',
-    top: 4,
-    right: 8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 999,
-    backgroundColor: '#ef4444',
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '800',
-    textAlign: 'center',
-    lineHeight: 18,
-    paddingHorizontal: 4,
-    overflow: 'hidden',
   },
 });

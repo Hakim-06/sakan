@@ -1,24 +1,26 @@
 {
   "expo": {
-    "name": "sakancampus-mobile",
+    "name": "SakanCampus Mobile",
     "slug": "sakancampus-mobile",
     "version": "1.0.0",
+    "scheme": "sakancampus",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0f172a"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.sakancampus.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0f172a"
       },
       "edgeToEdgeEnabled": true
     },

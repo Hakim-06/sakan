@@ -15,6 +15,24 @@ Mobile app workspace (isolated from the existing web and backend apps).
 - npm run start
 - Press `a` for Android emulator, or scan QR with Expo Go
 
+## Navigation
+
+- Auth flow: Login / Register
+- Main app: Feed / Messages / Publier / Profil (bottom tabs)
+
+## Build APK (internal test)
+
+1. Install EAS CLI (once):
+- npm install -g eas-cli
+
+2. Login Expo:
+- eas login
+
+3. Build APK:
+- npm run build:android:apk
+
+The APK download link will be returned by EAS build output.
+
 ## Current structure
 
 - src/config/env.js: environment config
@@ -30,10 +48,10 @@ Mobile app workspace (isolated from the existing web and backend apps).
 - src/screens/MessagesScreen.js: conversations + chat
 - src/screens/ProfileScreen.js: edit profile + logout
 - src/screens/PublishScreen.js: create annonce
+- eas.json: EAS build profiles (dev/preview/prod)
 
 ## Next steps
 
-- Add listing details screen
-- Improve feed filters + favorites
-- Add image upload in chat
-- Add annonce edit/delete flow
+- Add push notifications
+- Add advanced feed sorting
+- Add attachment/file messages
