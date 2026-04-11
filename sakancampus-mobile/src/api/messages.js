@@ -7,6 +7,12 @@ export async function getConversations(token) {
   });
 }
 
+export async function getUnreadCount(token) {
+  return api('/messages/unread/count', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export async function getMessagesWithUser(token, userId) {
   return api(`/messages/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },

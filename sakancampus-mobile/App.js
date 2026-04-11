@@ -8,6 +8,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MessagesScreen from './src/screens/MessagesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import PublishScreen from './src/screens/PublishScreen';
+import { getUnreadCount } from './src/api/messages';
 
 export default function App() {
   const [booting, setBooting] = useState(true);
@@ -17,6 +18,7 @@ export default function App() {
   const [token, setToken] = useState('');
   const [authScreen, setAuthScreen] = useState('login');
   const [tab, setTab] = useState('feed');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -96,7 +98,25 @@ export default function App() {
     setUser(null);
     setAuthScreen('login');
     setTab('feed');
+    setUnreadCount(0);
   };
+
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const loadUnread = async () => {
+      try {
+        const data = await getUnreadCount(token);
+        setUnreadCount(Number(data?.count || 0));
+      } catch {
+        // Ignore transient count errors.
+      }
+    };
+
+    loadUnread();
+    const id = setInterval(loadUnread, 12000);
+    return () => clearInterval(id);
+  }, [token, user]);
 
   if (booting) {
     return (
@@ -154,6 +174,7 @@ export default function App() {
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === 'messages' && styles.tabBtnActive]} onPress={() => setTab('messages')}>
           <Text style={[styles.tabText, tab === 'messages' && styles.tabTextActive]}>Messages</Text>
+          {unreadCount > 0 ? <Text style={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</Text> : null}
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === 'publish' && styles.tabBtnActive]} onPress={() => setTab('publish')}>
           <Text style={[styles.tabText, tab === 'publish' && styles.tabTextActive]}>Publier</Text>
@@ -210,5 +231,21 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: '#fff',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: '#ef4444',
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 4,
+    overflow: 'hidden',
   },
 });

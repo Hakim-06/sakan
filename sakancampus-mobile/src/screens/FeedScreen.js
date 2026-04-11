@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { getAnnonces } from '../api/annonces';
@@ -46,6 +47,9 @@ export default function FeedScreen({ token, user, onUserUpdated }) {
   const [annonces, setAnnonces] = useState([]);
   const [selected, setSelected] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState([]);
+  const [cityFilter, setCityFilter] = useState('');
+  const [minBudget, setMinBudget] = useState('');
+  const [maxBudget, setMaxBudget] = useState('');
 
   useEffect(() => {
     const favs = Array.isArray(user?.favorites) ? user.favorites : [];
@@ -95,6 +99,15 @@ export default function FeedScreen({ token, user, onUserUpdated }) {
     }
   };
 
+  const filteredAnnonces = annonces.filter((a) => {
+    const city = String(a?.city || '').toLowerCase();
+    const cityOk = !cityFilter.trim() || city.includes(cityFilter.trim().toLowerCase());
+    const budget = Number(a?.budget || 0);
+    const minOk = !minBudget || budget >= Number(minBudget);
+    const maxOk = !maxBudget || budget <= Number(maxBudget);
+    return cityOk && minOk && maxOk;
+  });
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -104,13 +117,39 @@ export default function FeedScreen({ token, user, onUserUpdated }) {
         </View>
       </View>
 
+      <View style={styles.filtersWrap}>
+        <TextInput
+          style={[styles.filterInput, styles.cityInput]}
+          placeholder="Filtrer ville"
+          placeholderTextColor="#94a3b8"
+          value={cityFilter}
+          onChangeText={setCityFilter}
+        />
+        <TextInput
+          style={styles.filterInput}
+          placeholder="Min"
+          placeholderTextColor="#94a3b8"
+          keyboardType="number-pad"
+          value={minBudget}
+          onChangeText={(v) => setMinBudget(v.replace(/\D/g, ''))}
+        />
+        <TextInput
+          style={styles.filterInput}
+          placeholder="Max"
+          placeholderTextColor="#94a3b8"
+          keyboardType="number-pad"
+          value={maxBudget}
+          onChangeText={(v) => setMaxBudget(v.replace(/\D/g, ''))}
+        />
+      </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color="#ea580c" size="large" />
         </View>
       ) : (
         <FlatList
-          data={annonces}
+          data={filteredAnnonces}
           keyExtractor={(item, idx) => String(item?._id || item?.id || idx)}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
@@ -122,7 +161,7 @@ export default function FeedScreen({ token, user, onUserUpdated }) {
               isFavorite={favoriteIds.includes(String(item?._id || item?.id || ''))}
             />
           )}
-          ListEmptyComponent={<Text style={styles.empty}>Aucune annonce pour le moment.</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>Aucune annonce pour ces filtres.</Text>}
           ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : null}
         />
       )}
@@ -157,6 +196,28 @@ const styles = StyleSheet.create({
   },
   title: { color: '#f8fafc', fontSize: 22, fontWeight: '800' },
   subtitle: { color: '#94a3b8', marginTop: 2 },
+  filtersWrap: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterInput: {
+    width: 78,
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#f8fafc',
+    backgroundColor: '#111827',
+  },
+  cityInput: {
+    flex: 1,
+    width: 'auto',
+  },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { padding: 14, gap: 10 },
   card: {
