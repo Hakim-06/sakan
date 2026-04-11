@@ -7,3 +7,13 @@ export async function getAnnonces(token) {
     },
   });
 }
+
+export async function createAnnonce(token, payload) {
+  return api('/annonces', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}

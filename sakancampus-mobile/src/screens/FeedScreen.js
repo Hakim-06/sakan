@@ -11,8 +11,9 @@ import {
   View,
 } from 'react-native';
 import { getAnnonces } from '../api/annonces';
+import { toggleFavorite } from '../api/users';
 
-function Item({ item, onOpen }) {
+function Item({ item, onOpen, onToggleFavorite, isFavorite }) {
   const city = item?.city || 'Ville inconnue';
   const budget = Number(item?.budget || 0);
   const owner = item?.owner?.name || item?.name || 'Utilisateur';
@@ -22,17 +23,35 @@ function Item({ item, onOpen }) {
       <Text style={styles.city}>{city}</Text>
       <Text style={styles.owner}>Par: {owner}</Text>
       <Text style={styles.price}>{budget} DH/mois</Text>
-      <Text style={styles.more}>Voir details</Text>
+      <View style={styles.cardRow}>
+        <Text style={styles.more}>Voir details</Text>
+        <Pressable
+          style={[styles.favBtn, isFavorite && styles.favBtnActive]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(item);
+          }}
+        >
+          <Text style={[styles.favText, isFavorite && styles.favTextActive]}>{isFavorite ? 'Favori' : 'Favori +'}</Text>
+        </Pressable>
+      </View>
     </Pressable>
   );
 }
 
-export default function FeedScreen({ token, user }) {
+export default function FeedScreen({ token, user, onUserUpdated }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [annonces, setAnnonces] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+
+  useEffect(() => {
+    const favs = Array.isArray(user?.favorites) ? user.favorites : [];
+    const ids = favs.map((f) => String(f?._id || f)).filter(Boolean);
+    setFavoriteIds(ids);
+  }, [user]);
 
   const load = useCallback(async (withRefresh = false) => {
     try {
@@ -54,6 +73,28 @@ export default function FeedScreen({ token, user }) {
     load(false);
   }, [load]);
 
+  const handleToggleFavorite = async (item) => {
+    const id = String(item?._id || item?.id || '');
+    if (!id) return;
+
+    const prevFavs = [...favoriteIds];
+    const optimistic = prevFavs.includes(id)
+      ? prevFavs.filter((x) => x !== id)
+      : [...prevFavs, id];
+    setFavoriteIds(optimistic);
+
+    try {
+      const data = await toggleFavorite(token, id);
+      const next = Array.isArray(data?.favorites) ? data.favorites.map(String) : optimistic;
+      setFavoriteIds(next);
+      if (onUserUpdated) {
+        onUserUpdated({ ...user, favorites: next });
+      }
+    } catch {
+      setFavoriteIds(prevFavs);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -73,7 +114,14 @@ export default function FeedScreen({ token, user }) {
           keyExtractor={(item, idx) => String(item?._id || item?.id || idx)}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
-          renderItem={({ item }) => <Item item={item} onOpen={setSelected} />}
+          renderItem={({ item }) => (
+            <Item
+              item={item}
+              onOpen={setSelected}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorite={favoriteIds.includes(String(item?._id || item?.id || ''))}
+            />
+          )}
           ListEmptyComponent={<Text style={styles.empty}>Aucune annonce pour le moment.</Text>}
           ListHeaderComponent={error ? <Text style={styles.error}>{error}</Text> : null}
         />
@@ -118,10 +166,30 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
   },
+  cardRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   city: { color: '#f8fafc', fontSize: 18, fontWeight: '800' },
   owner: { color: '#cbd5e1', marginTop: 4 },
   price: { color: '#fdba74', marginTop: 8, fontWeight: '800' },
   more: { color: '#93c5fd', marginTop: 8, fontWeight: '700' },
+  favBtn: {
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#0b1220',
+  },
+  favBtnActive: {
+    borderColor: '#ea580c',
+    backgroundColor: '#7c2d12',
+  },
+  favText: { color: '#cbd5e1', fontWeight: '700', fontSize: 12 },
+  favTextActive: { color: '#fff' },
   empty: { color: '#94a3b8', textAlign: 'center', marginTop: 32 },
   error: { color: '#fda4af', marginBottom: 12 },
   modalBackdrop: {

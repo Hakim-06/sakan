@@ -7,3 +7,10 @@ export async function updateProfile(token, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function toggleFavorite(token, annonceId) {
+  return api(`/users/favorites/${annonceId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

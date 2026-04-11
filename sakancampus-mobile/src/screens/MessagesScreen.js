@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Image,
   FlatList,
   Pressable,
   SafeAreaView,
@@ -8,7 +9,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { getConversations, getMessagesWithUser, sendMessage, startTyping, stopTyping } from '../api/messages';
+import * as ImagePicker from 'expo-image-picker';
+import { getConversations, getMessagesWithUser, sendMessage, startTyping, stopTyping, uploadMessageImage } from '../api/messages';
 
 function toTime(input) {
   if (!input) return '';
@@ -22,6 +24,7 @@ export default function MessagesScreen({ token }) {
   const [activeUserId, setActiveUserId] = useState('');
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
+  const [pickedImage, setPickedImage] = useState(null);
   const [remoteTyping, setRemoteTyping] = useState(false);
   const stopTimerRef = useRef(null);
   const typingRef = useRef(false);
@@ -48,6 +51,7 @@ export default function MessagesScreen({ token }) {
       const mapped = rows.map((m) => ({
         id: String(m?._id || Math.random()),
         text: m?.text || '',
+        imageUrl: m?.imageUrl || null,
         mine: String(m?.sender?._id || m?.sender) !== String(userId),
         time: toTime(m?.createdAt),
       }));
@@ -96,7 +100,7 @@ export default function MessagesScreen({ token }) {
 
   const handleSend = async () => {
     const text = draft.trim();
-    if (!text || !activeUserId) return;
+    if ((!text && !pickedImage) || !activeUserId) return;
 
     setDraft('');
     if (typingRef.current) {
@@ -105,12 +109,30 @@ export default function MessagesScreen({ token }) {
     }
 
     try {
-      await sendMessage(token, activeUserId, text);
+      let uploaded = null;
+      if (pickedImage) {
+        uploaded = await uploadMessageImage(token, pickedImage);
+      }
+      await sendMessage(token, activeUserId, text, uploaded);
+      setPickedImage(null);
       await loadMessages(activeUserId);
       await loadConversations();
     } catch {
       // Keep silent for now.
     }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+    const asset = result.assets?.[0];
+    if (!asset?.uri) return;
+    setPickedImage(asset);
   };
 
   return (
@@ -146,6 +168,7 @@ export default function MessagesScreen({ token }) {
             contentContainerStyle={styles.msgList}
             renderItem={({ item }) => (
               <View style={[styles.msgBubble, item.mine ? styles.msgMine : styles.msgOther]}>
+                {item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.msgImage} /> : null}
                 <Text style={[styles.msgText, item.mine ? styles.msgTextMine : styles.msgTextOther]}>{item.text}</Text>
                 <Text style={styles.msgTime}>{item.time}</Text>
               </View>
@@ -158,6 +181,9 @@ export default function MessagesScreen({ token }) {
           />
 
           <View style={styles.composer}>
+            <Pressable style={styles.imageBtn} onPress={pickImage}>
+              <Text style={styles.imageBtnText}>Img</Text>
+            </Pressable>
             <TextInput
               style={styles.input}
               placeholder="Ecrire un message..."
@@ -169,6 +195,14 @@ export default function MessagesScreen({ token }) {
               <Text style={styles.sendText}>Send</Text>
             </Pressable>
           </View>
+          {pickedImage?.uri ? (
+            <View style={styles.previewRow}>
+              <Image source={{ uri: pickedImage.uri }} style={styles.previewImage} />
+              <Pressable onPress={() => setPickedImage(null)}>
+                <Text style={styles.removePreview}>Retirer image</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       )}
     </SafeAreaView>
@@ -207,6 +241,7 @@ const styles = StyleSheet.create({
   msgText: { fontSize: 14 },
   msgTextMine: { color: '#fff' },
   msgTextOther: { color: '#e2e8f0' },
+  msgImage: { width: 180, height: 140, borderRadius: 10, marginBottom: 6, backgroundColor: '#0b1220' },
   msgTime: { color: '#cbd5e1', marginTop: 4, fontSize: 11 },
   typing: { color: '#94a3b8', marginTop: 10, marginLeft: 4, fontSize: 12, fontWeight: '700' },
   composer: {
@@ -225,6 +260,15 @@ const styles = StyleSheet.create({
     color: '#f8fafc',
     backgroundColor: '#111827',
   },
+  imageBtn: {
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: '#1f2937',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  imageBtnText: { color: '#cbd5e1', fontWeight: '700' },
   sendBtn: {
     paddingHorizontal: 14,
     borderRadius: 10,
@@ -232,4 +276,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendText: { color: '#fff', fontWeight: '700' },
+  previewRow: {
+    borderTopWidth: 1,
+    borderTopColor: '#1f2937',
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  previewImage: { width: 56, height: 56, borderRadius: 8 },
+  removePreview: { color: '#fdba74', fontWeight: '700' },
 });

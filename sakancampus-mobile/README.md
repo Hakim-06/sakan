@@ -29,9 +29,11 @@ Mobile app workspace (isolated from the existing web and backend apps).
 - src/screens/FeedScreen.js: feed list from backend
 - src/screens/MessagesScreen.js: conversations + chat
 - src/screens/ProfileScreen.js: edit profile + logout
+- src/screens/PublishScreen.js: create annonce
 
 ## Next steps
 
 - Add listing details screen
 - Improve feed filters + favorites
 - Add image upload in chat
+- Add annonce edit/delete flow

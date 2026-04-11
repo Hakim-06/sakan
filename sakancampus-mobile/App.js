@@ -7,6 +7,7 @@ import { clearToken, getToken, saveToken } from './src/storage/token';
 import RegisterScreen from './src/screens/RegisterScreen';
 import MessagesScreen from './src/screens/MessagesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import PublishScreen from './src/screens/PublishScreen';
 
 export default function App() {
   const [booting, setBooting] = useState(true);
@@ -134,8 +135,9 @@ export default function App() {
   return (
     <SafeAreaView style={styles.appSafe}>
       <View style={styles.appBody}>
-        {tab === 'feed' && <FeedScreen token={token} user={user} />}
+        {tab === 'feed' && <FeedScreen token={token} user={user} onUserUpdated={setUser} />}
         {tab === 'messages' && <MessagesScreen token={token} />}
+        {tab === 'publish' && <PublishScreen token={token} onPublished={() => setTab('feed')} />}
         {tab === 'profile' && (
           <ProfileScreen
             token={token}
@@ -152,6 +154,9 @@ export default function App() {
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === 'messages' && styles.tabBtnActive]} onPress={() => setTab('messages')}>
           <Text style={[styles.tabText, tab === 'messages' && styles.tabTextActive]}>Messages</Text>
+        </Pressable>
+        <Pressable style={[styles.tabBtn, tab === 'publish' && styles.tabBtnActive]} onPress={() => setTab('publish')}>
+          <Text style={[styles.tabText, tab === 'publish' && styles.tabTextActive]}>Publier</Text>
         </Pressable>
         <Pressable style={[styles.tabBtn, tab === 'profile' && styles.tabBtnActive]} onPress={() => setTab('profile')}>
           <Text style={[styles.tabText, tab === 'profile' && styles.tabTextActive]}>Profil</Text>
