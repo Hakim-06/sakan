@@ -1792,6 +1792,7 @@ export default function Feed() {
     setActiveConvId(targetId);
     setIsMessagesOpen(true);
     setMessageListFilter('all');
+    setNewMessage(`Wach had dar disponible? Nqas liya f ${profile.city || 'had l-had 3lah'}...`);
     loadMessagesWithUser(targetId, false);
   };
   const openProfileEdit = async () => {
@@ -1940,6 +1941,9 @@ export default function Feed() {
     *{box-sizing:border-box}
     body,html{margin:0!important;padding:0!important}
     #root{max-width:100%!important;width:100%!important;margin:0!important;padding:0!important}
+
+    /* MOBILE FIX: Single tap instead of double-tap */
+    button,a,[role="button"]{touch-action:manipulation!important;pointer-events:auto!important}
 
     /* CARDS */
     .annonces-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:24px;max-width:1200px;margin:0 auto;padding:24px;position:relative;z-index:0}
