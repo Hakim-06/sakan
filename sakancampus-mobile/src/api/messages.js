@@ -19,6 +19,12 @@ export async function getMessagesWithUser(token, userId) {
   });
 }
 
+export async function getUserProfile(token, userId) {
+  return api(`/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export async function sendMessage(token, userId, text, imagePayload = null) {
   const body = { text };
   if (imagePayload?.imageUrl && imagePayload?.imagePublicId) {

@@ -492,6 +492,22 @@ export default function Feed() {
   const aiMessagesEndRef = useRef(null);
   const [conversations, setConversations] = useState([]);
 
+  const getContactIntroKey = (userId) => `sc_contact_intro_seen:${String(userId || '')}`;
+  const hasSeenContactIntro = (userId) => {
+    try {
+      return localStorage.getItem(getContactIntroKey(userId)) === '1';
+    } catch {
+      return false;
+    }
+  };
+  const markContactIntroSeen = (userId) => {
+    try {
+      localStorage.setItem(getContactIntroKey(userId), '1');
+    } catch {
+      // Ignore storage failures and keep runtime behavior intact.
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem('sc_pinned_conversations', JSON.stringify(pinnedConversations));
   }, [pinnedConversations]);
@@ -1852,6 +1868,8 @@ export default function Feed() {
     }
 
     const hasExistingConversation = conversations.some((c) => String(c.userId) === targetId);
+    const shouldPrefillIntro = !hasExistingConversation && !hasSeenContactIntro(targetId);
+    const introMessage = `Bonjour ${profile.name || ''},\n\nVotre annonce pour le logement a ${profile.city || 'cette ville'} m'interesse beaucoup. Est-ce qu'il est toujours disponible ?\n\nJ'ai un budget autour de ${Number(profile.budget) ? `${new Intl.NumberFormat('fr-MA').format(Number(profile.budget))} DH/mois` : 'mon budget mensuel'} et je peux me deplacer rapidement pour une visite.\n\nMerci d'avance pour votre retour.`;
 
     if (!hasExistingConversation) {
       setConversations(prev => [{
@@ -1871,8 +1889,9 @@ export default function Feed() {
     setActiveConvId(targetId);
     setIsMessagesOpen(true);
     setMessageListFilter('all');
-    if (!hasExistingConversation) {
-      setNewMessage(`Bonjour ${profile.name || ''},\n\nVotre annonce pour le logement a ${profile.city || 'cette ville'} m'interesse beaucoup. Est-ce qu'il est toujours disponible ?\n\nJ'ai un budget autour de ${Number(profile.budget) ? `${new Intl.NumberFormat('fr-MA').format(Number(profile.budget))} DH/mois` : 'mon budget mensuel'} et je peux me deplacer rapidement pour une visite.\n\nMerci d'avance pour votre retour.`);
+    if (shouldPrefillIntro) {
+      markContactIntroSeen(targetId);
+      setNewMessage(introMessage);
     } else if (String(activeConvId) !== targetId) {
       setNewMessage('');
     }
@@ -2131,6 +2150,9 @@ export default function Feed() {
     .scroll-area{overflow-y:auto}
     .scroll-area::-webkit-scrollbar{width:4px}
     .scroll-area::-webkit-scrollbar-thumb{background:${darkMode?'#334155':'#e2e8f0'};border-radius:99px}
+    .typing-status{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;background:${darkMode?'#334155':'#f1f5f9'};color:${textMuted};font-size:0.74rem;font-weight:700;max-width:fit-content;border:1px solid ${border}}
+    .typing-status-dots{display:inline-flex;align-items:center;gap:3px}
+    .typing-status-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:typingDot 1.1s infinite}
 
     /* EMPTY STATES */
     .empty-state{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:${textMuted};gap:14px;text-align:center}
@@ -3479,6 +3501,16 @@ export default function Feed() {
                       );
                     });
                   })()}
+                  {activeChat?.isTyping && (
+                    <div className="typing-status">
+                      <span>{activeChat?.name || 'Utilisateur'} ecrit</span>
+                      <span className="typing-status-dots" aria-hidden="true">
+                        {[0,1,2].map((i) => (
+                          <span key={i} className="typing-status-dot" style={{ animationDelay: `${i * 0.18}s` }} />
+                        ))}
+                      </span>
+                    </div>
+                  )}
                   <div ref={messagesEndRef} />
                 </div>
                 {previewImage && (
@@ -3494,16 +3526,6 @@ export default function Feed() {
                       <button onClick={() => { setPreviewImage(null); setSelectedImage(null); }} style={{ position:'absolute', top:'-8px', right:'-8px', background:'#ef4444', color:'white', border:'none', width:'24px', height:'24px', borderRadius:'50%', cursor:'pointer', display:'flex', justifyContent:'center', alignItems:'center', fontSize:'14px', fontWeight:'bold' }}>×</button>
                     </div>
                     <span style={{ fontSize:'0.8rem', color:textMuted }}>Image prête à envoyer</span>
-                  </div>
-                )}
-                {!!activeChat?.isTyping && (
-                  <div style={{ padding:'8px 14px 0', color:textMuted, fontSize:'0.74rem', fontWeight:'700', display:'flex', alignItems:'center', gap:'6px' }}>
-                    <span>{activeChat?.name || 'Utilisateur'} ecrit...</span>
-                    <span style={{ display:'flex', alignItems:'center', gap:'3px' }}>
-                      {[0,1,2].map(i => (
-                        <span key={i} style={{ width:'4px', height:'4px', borderRadius:'50%', background:'#94a3b8', animation:`typingDot 1.1s ${i * 0.18}s infinite` }} />
-                      ))}
-                    </span>
                   </div>
                 )}
                 <div style={{ padding:`11px calc(13px + env(safe-area-inset-right, 0px)) calc(11px + env(safe-area-inset-bottom, 0px)) calc(13px + env(safe-area-inset-left, 0px))`, borderTop:`1px solid ${border}`, display:'flex', gap:'8px', alignItems:'center', background:surface, overflowX:'hidden' }}>
